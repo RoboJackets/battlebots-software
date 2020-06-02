@@ -1,4 +1,4 @@
-function next_state = step1DOFSVM(sys,  curr_state, input, dt, Ts)
+function next_state = step1DOFSVM(sys, curr_state, input, dt, Ts)
 %% STEP1DOFSVM  Steps 1DOF SVM for a uniform disk with wheels 
 %                   meltybrain battlebot. 
 % next_state - next state of robot, 1-by-2 vector of robot angular position
