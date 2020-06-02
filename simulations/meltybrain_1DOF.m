@@ -36,7 +36,7 @@ beta = Kt ./ (J .* R); % in (V * m)^-1
 A = [0 1 ; 0 -alpha];
 B = [0 ; r_wheel .* beta ./ r_robot];
 C = [0 1];
-D = 0;
+D = [0 0];
 sys = ss(A, B, C, D);
 
 %% STATE SPACE PARAMETERS

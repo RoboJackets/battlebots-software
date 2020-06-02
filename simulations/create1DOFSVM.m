@@ -1,9 +1,10 @@
-function sys = create1DOFSVM(Kt, D, R, r_robot_im, w_robot_im, ...
-    r_wheel_im, w_wheel_im)
+function [sys, A, B, C, D] = create1DOFSVM(Kt, D, R, r_robot_im, ...
+    w_robot_im, r_wheel_im, w_wheel_im)
 % CREATE1DOFSVM   Creates 1DOF SVM for a uniform disk with wheels 
 %                   meltybrain battlebot. 
 %
 % sys - A state space object ("ss" object)
+% A, B, C, D - Matrices to define sys using the "ss" MATLAB function
 % 
 % Kt - Motor Torque Constant (in N*m/A)
 % D - Frictional Loss Constant (N*m*s/rad)
@@ -29,8 +30,8 @@ beta = Kt ./ (J .* R); % in (V * m)^-1
 
 A = [0 1 ; 0 -alpha];
 B = [0 ; r_wheel .* beta ./ r_robot];
-C = [0 1];
-D = 0;
+C = eye(2);
+D = [0; 0];
 sys = ss(A, B, C, D);
 
 end
