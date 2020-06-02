@@ -18,7 +18,7 @@ sys = create1DOFSVM(Kt, D, R, ...
 
 %% SIMULATION PARAMETERS
 
-dt = 1e-7; % modeling physics at this rate (seconds)
+dt = 1e-6; % modeling physics at this rate (seconds)
 Ts = 1e-3; % algorithms updating at this rate (seconds)
 duration = 8; % simulation duration (seconds)
 
@@ -38,14 +38,16 @@ u0 = [initial_voltage initial_extrestorque]; % initial input state
 x0 = [initial_position initial_velocity]; % initial state space state
 TT = 0:Ts:duration; % algorithm evaluation times (seconds)
 steps = numel(TT)+1; % number of times algorithm is run (#)
-uu = zeros(steps, 2); % all inputs (steps -> motor voltage, 
-                      %                       external resistive torque)
-yy = zeros(steps, 2); % all states (steps -> angular position, 
-                      %                         angular velocity)
+uu = zeros(steps, 2); % all inputs (steps -> motor voltage (volts), 
+                      %              external resistive torque (volts))
+yy = zeros(steps, 2); % all states (steps -> angular position in rad, 
+                      %                         angular velocity in rad/s)
 uu(1, :) = u0;
 yy(1, :) = x0;
 
 for k=2:steps
+    
+    fprintf("%d/%d\n", k, steps);
     
     % Update the physics 
     yy(k, :) = step1DOFSVM(sys, yy(k-1, :), uu(k-1, :), dt, Ts);
@@ -59,6 +61,27 @@ end
 
 %% PLOTS AND VISUALIZATIONS
 
+figure('units','normalized','outerposition',[0 0 1 1])
+Nplot = 3;
 
+TTplot = [TT TT(end) + Ts];
 
+subplot(Nplot, 1, 1);
+plot(TTplot, mod(yy(:, 1).*180./pi, 360), 'LineWidth', 2); 
+ylabel("Angular Position (deg%360)");
+xlabel("Time (s)");
+
+subplot(Nplot, 1, 2);
+plot(TTplot, yy(:, 2).*180./pi, 'LineWidth', 2);
+ylabel("Angular Velocity (deg/s)");
+xlabel("Time (s)");
+
+subplot(Nplot, 1, 3);
+plot(TTplot, uu(:, 1));
+ylabel("Input Voltage (V)");
+xlabel("Time (s)");
+
+sgtitle(sprintf("Robot Dynamic Modeling: Kt=%.3f, D=%.3f, R=%.3f, BotR=%.1f, BotW=%.1f, WheelR=%.1f, WheelW=%.1f", ...
+    Kt, D, R, r_robot_im, w_robot_im, r_wheel_im, w_wheel_im), ...
+    "FontSize", 18);
 
