@@ -13,6 +13,8 @@ r_wheel_im = 1.5; % wheel radius (in)
 w_wheel_im = 0.2; % wheel weight (lbs)
 % the im suffix stands for imperial 
 
+slew_rate = inf; % V / s
+
 sys = create1DOFSVM(Kt, D, R, ...
     r_robot_im, w_robot_im, r_wheel_im, w_wheel_im);
 
@@ -34,6 +36,8 @@ initial_extrestorque = 0; % initial external resistive torque (volts)
 
 %% SIMULATION RUNNING (THIS IS WHERE THE FUN BEGINS)
 
+sysd = c2d(sys, dt); % ??? discretize ??? maybe ??? faster ???
+
 u0 = [initial_voltage initial_extrestorque]; % initial input state
 x0 = [initial_position initial_velocity]; % initial state space state
 TT = 0:Ts:duration; % algorithm evaluation times (seconds)
@@ -50,7 +54,14 @@ for k=2:steps
     fprintf("%d/%d\n", k, steps);
     
     % Update the physics 
-    yy(k, :) = step1DOFSVM(sys, yy(k-1, :), uu(k-1, :), dt, Ts);
+    if k==2
+        yy(k, :) = step1DOFSVM(sys, yy(k-1, :), uu(k-1, :), ...
+            dt, Ts, slew_rate);
+    else
+        yy(k, :) = step1DOFSVM(sys, yy(k-1, :), uu(k-1, :), ...
+            dt, Ts, slew_rate, uu(k-2, :));    
+    end
+    
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % ALGO GOES HERE BUT HERE'S THE LOGIC FOR NOW %
