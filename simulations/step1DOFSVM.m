@@ -1,5 +1,5 @@
-function next_state = step1DOFSVM(sys, curr_state, input, dt, Ts, sr, ...
-    prev_input)
+function [next_state, state_history] = ...
+    step1DOFSVM(sys, curr_state, input, dt, Ts, sr, prev_input)
 %% STEP1DOFSVM  Steps 1DOF SVM for a uniform disk with wheels 
 %                   meltybrain battlebot. 
 % next_state - next state of robot, 1-by-2 vector of robot angular position
@@ -31,6 +31,7 @@ input_voltage(isnan(input_voltage)) = 0;
 actual_input = input_voltage.' - input(2);
 [yy, ~, ~] = lsim(sys, actual_input, tt, curr_state);
 next_state = yy(end, :);
+state_history = yy;
 
 end
 
