@@ -3,17 +3,21 @@ close all;
 
 %% PHYSICAL PARAMETERS AND CONSTANTS
 
-Kt = 1; % Motor Constant (N * m / A)
-D = 0.01; % Frictional Loss Constant (N * m * s / rad)
-R = 1; % Motor Resistance (Ohms)
+Kv = 3040; % Motor Constant (RPM / Volt)
 
-r_robot_im = 6; % robot radius (in)
-w_robot_im = 12; % robot weight (lbs)
-r_wheel_im = 1.5; % wheel radius (in)
+Kt = inv(Kv / 60 * 2 * pi); % Kt = 1/Kv if Kv is in (rad/s)/Volt
+
+% Kt = 318; % Motor Constant (N * m / A)
+D = 1e-20; % Frictional Loss Constant (N * m * s / rad)
+R = 5e-3; % Motor Resistance (Ohms)
+
+r_robot_im = 5; % robot radius (in)
+w_robot_im = 11.8; % robot weight (lbs)
+r_wheel_im = 2.5; % wheel radius (in)
 w_wheel_im = 0.2; % wheel weight (lbs)
 % the im suffix stands for imperial 
 
-slew_rate = inf; % V / s
+slew_rate = 1e40; % V / s
 
 sys = create1DOFSVM(Kt, D, R, ...
     r_robot_im, w_robot_im, r_wheel_im, w_wheel_im);
@@ -26,7 +30,7 @@ duration = 8; % simulation duration (seconds)
 
 initial_position = 0; % inital heading (radians)
 initial_velocity = 0; % initial angular velocity (radians / second)
-initial_voltage = 2; % initial motor voltage (volts fuck u think)
+initial_voltage = 8; % initial motor voltage (volts fuck u think)
 initial_extrestorque = 0; % initial external resistive torque (volts)
 
 %% ALGORITHM PARAMETERS
@@ -37,6 +41,7 @@ initial_extrestorque = 0; % initial external resistive torque (volts)
 %% SIMULATION RUNNING (THIS IS WHERE THE FUN BEGINS)
 
 sysd = c2d(sys, dt); % ??? discretize ??? maybe ??? faster ???
+
 
 u0 = [initial_voltage initial_extrestorque]; % initial input state
 x0 = [initial_position initial_velocity]; % initial state space state
@@ -106,8 +111,8 @@ ylabel("Input Voltage (V)");
 xlabel("Time (s)");
 
 sgtitle(sprintf(['Robot Dynamic Modeling: Kt=%.3f, D=%.3f, R=%.3f, ', ...
-    'BotR=%.1f, BotW=%.1f, WheelR=%.1f, WheelW=%.1f, SR=%.1f, ', ...
-    'Ts=%.1g dt=%.1g'], ...
+    'BotR=%.1f, BotW=%.1f, WheelR=%.1f, WheelW=%.1f, SR=%.1g, ', ...
+    'Ts=%.1g, dt=%.1g'], ...
     Kt, D, R, r_robot_im, w_robot_im, r_wheel_im, w_wheel_im, ...
     slew_rate, Ts, dt), ...
     "FontSize", 18);

@@ -26,7 +26,7 @@ end
 tt = 0:dt:Ts; % time vector
 input_voltage = prev_input(1) + sr .* tt;
 input_voltage(input_voltage > input(1)) = input(1); % input voltage 
-%                       affected by slew rate
+%                                                    affected by slew rate
 input_voltage(isnan(input_voltage)) = 0;
 actual_input = input_voltage.' - input(2);
 [yy, ~, ~] = lsim(sys, actual_input, tt, curr_state);
