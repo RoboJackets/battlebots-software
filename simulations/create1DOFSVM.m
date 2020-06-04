@@ -25,7 +25,8 @@ I_robot = 0.5 .* w_robot .* r_robot .^ 2; % robot body inertia
 I_wheel = 0.5 .* w_wheel .* r_wheel .^ 2; % wheel inertia
 J = 2 .* I_wheel + I_robot .* r_wheel .^ 2 ./ (r_robot .^ 2); 
     % effective inertia 
-alpha = (Kt.^2 + D .* R) ./ (J .* R); % in seconds / meter
+alpha = (Kt.^2 + D .* R ./ 2) ./ (J .* R ./ 2); % in seconds / meter
+% R / 2 as these are TWO MOTORS acting IDENTICALLY
 beta = Kt ./ (J .* R); % in (V * m)^-1
 
 A = [0 1 ; 0 -alpha];

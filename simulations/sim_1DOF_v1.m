@@ -3,13 +3,12 @@ close all;
 
 %% PHYSICAL PARAMETERS AND CONSTANTS
 
-Kv = 3040; % Motor Constant (RPM / Volt)
-
+% using: Turnigy TrackStar 1/8th Sensored Brushless Motor 1900KV 
+Kv = 1900; % Motor Constant (RPM / Volt)
 Kt = inv(2*pi*Kv/60); % Kt = 1/Kv if Kv is in (rad/s)/Volt
-
 % Kt = 318; % Motor Constant (N * m / A)
-D = 1e-1; % Frictional Loss Constant (N * m * s / rad)
-R = 5e-3; % Motor Resistance (Ohms)
+D = 6e-2; % Frictional Loss Constant (N * m * s / rad)
+R = 12e-3; % Motor Resistance (Ohms)
 
 r_robot_im = 5; % robot radius (in)
 w_robot_im = 11.8; % robot weight (lbs)
@@ -30,7 +29,7 @@ duration = 8; % simulation duration (seconds)
 
 initial_position = 0; % inital heading (radians)
 initial_velocity = 0; % initial angular velocity (radians / second)
-initial_voltage = 8; % initial motor voltage (volts fuck u think)
+initial_voltage = 15; % initial motor voltage (volts fuck u think)
 initial_extrestorque = 0; % initial external resistive torque (volts)
 
 %% ALGORITHM PARAMETERS
