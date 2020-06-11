@@ -30,18 +30,13 @@ input_voltage(input_voltage > input(1)) = input(1); % input voltage
 input_voltage(isnan(input_voltage)) = 0;
 actual_input = input_voltage.' - input(2);
 % [yy, ~, ~] = lsim(sys, actual_input, tt, curr_state);
-yy = zeros(numel(tt)+1, 2);
-yy(1, :) = curr_state;
+yy = zeros(2, numel(tt)+1);
+yy(:, 1) = curr_state.';
 for k=2:numel(tt)+1
-    prevy = yy(k-1, :); % column state vector 
-    prevy = prevy.';
-    input = actual_input(k-1, :).'; % column input vector 
-    nexty = prevy + dt*(A * prevy + B * input); 
+    yy(:, k) = yy(:, k-1) + dt*(A * yy(:, k-1) + B * actual_input(k-1)); 
                                             % column output vector
-    nexty = nexty.';
-    yy(k, :) = nexty;
 end
-yy = yy(2:end, :);
+yy = yy(:, 2:end).';
 next_state = yy(end, :);
 state_history = yy;
 

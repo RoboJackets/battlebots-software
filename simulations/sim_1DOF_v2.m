@@ -4,7 +4,8 @@ close all;
 %% PHYSICAL PARAMETERS AND CONSTANTS
 
 % using: Turnigy TrackStar 1/8th Sensored Brushless Motor 1900KV 
-Kv = 1900; % Motor Constant (RPM / Volt)
+% wait that's a lie i made the KV bigger
+Kv = 3700; % Motor Constant (RPM / Volt)
 gear_rat = 1; % gear ratio (RPM / RPM)
 Kt = inv(2*pi*Kv*gear_rat/60); % Kt = 1/Kv if Kv is in (rad/s)/Volt
 % Kt = 318; % Motor Constant (N * m / A)
@@ -26,7 +27,7 @@ slew_rate = 1e40; % V / s
     
 %% SIMULATION PARAMETERS
 
-dt = 1e-7; % modeling physics at this rate (seconds)
+dt = 1e-6; % modeling physics at this rate (seconds)
 Ts = 1/(3.2e3); % algorithms updating at this rate (seconds)
 duration = 8; % simulation duration (seconds)
 
@@ -50,7 +51,7 @@ acc_dir = [0 ; 0]; % angle deviation CW of +y on acc from direction of
 acc_params = [getAccParams("ADXL375", 1); getAccParams("perfect", 1)];
 accs = cell(numel(acc_params), 1);
 for k=1:numel(acc_params)
-    accs{k, 1} = imuSensor("SampleRate", 1/Ts, ...
+    accs{k, 1} = imuSensor("accel-mag", "SampleRate", 1/Ts, ...
         "Temperature", sys_temp, ...
         "Accelerometer", acc_params(k));
 end
@@ -122,7 +123,7 @@ for k=2:steps
 %         acc_data(kacc, k, :) = acc_readings(end, :);
         [acc_readings, ~] = curr_acc( ...
             reshape(acc_true(kacc, k, :), [1 3]), ...
-            [zeros(1, 2) yy(k, 2)]);
+            [0 0 0]);
         acc_data(kacc, k, :) = acc_readings;
         acc_true(kacc, k, 3) = -g; % for plotting
     end
