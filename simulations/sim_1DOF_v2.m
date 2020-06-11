@@ -5,9 +5,10 @@ close all;
 
 % using: Turnigy TrackStar 1/8th Sensored Brushless Motor 1900KV 
 Kv = 1900; % Motor Constant (RPM / Volt)
-Kt = inv(2*pi*Kv/60); % Kt = 1/Kv if Kv is in (rad/s)/Volt
+gear_rat = 1; % gear ratio (RPM / RPM)
+Kt = inv(2*pi*Kv*gear_rat/60); % Kt = 1/Kv if Kv is in (rad/s)/Volt
 % Kt = 318; % Motor Constant (N * m / A)
-D = 6e-2; % Frictional Loss Constant (N * m * s / rad)
+D = 1e-5; % Frictional Loss Constant (N * m * s / rad)
 R = 12e-3; % Motor Resistance (Ohms)
 
 r_robot_im = 5; % robot radius (in)
@@ -18,7 +19,7 @@ w_wheel_im = 0.2; % wheel weight (lbs)
 
 slew_rate = 1e40; % V / s
 
-sys = create1DOFSVM(Kt, D, R, ...
+[sys, A, B, ~, ~] = create1DOFSVM(Kt, D, R, ...
     r_robot_im, w_robot_im, r_wheel_im, w_wheel_im);
 
 
@@ -61,7 +62,8 @@ end
 
 %% SIMULATION SETUP
 
-sysd = c2d(sys, dt); % ??? discretize ??? maybe ??? faster ???
+% sysd = c2d(sys, dt); % ??? discretize ??? maybe ??? faster ???
+sysd = sys;
 
 
 u0 = [initial_voltage initial_extrestorque]; % initial input state
@@ -91,11 +93,11 @@ for k=2:steps
     
     % Update the physics 
     if k==2
-        [yy(k, :), yy_all_temp] = step1DOFSVM(sys, ...
+        [yy(k, :), yy_all_temp] = step1DOFSVM(sysd, A, B, ...
             yy(k-1, :), uu(k-1, :), ...
             dt, Ts, slew_rate);
     else
-        [yy(k, :), yy_all_temp] = step1DOFSVM(sys, ...
+        [yy(k, :), yy_all_temp] = step1DOFSVM(sysd, A, B, ...
             yy(k-1, :), uu(k-1, :), ...
             dt, Ts, slew_rate, uu(k-2, :));    
     end
