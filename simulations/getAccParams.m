@@ -9,10 +9,10 @@ if strcmp(partname, "ADXL375")
         mr = randrange(1, 1, 180, 200) .* g;
         reso = randrange(1, 1, 44, 54) .* 1e-3 .* g;
         constbias = randnorm(1, 3, -400, 400, -6e3, 6e3) .* 1e-3 .* g;
-        axismis = randrange(1, 3, 0, 2.5);
-        noisedens = randrange(1, 3, 0, 5) .* 1e-3 .* g;
+        axismis = abs(randnorm(1, 3, -2.5, 2.5, -inf, inf));
+        noisedens = abs(randnorm(1, 3, -5, 5, -inf, inf)) .* 1e-3 .* g;
         tempbias = randnorm(1, 3, -10, 10, -inf, inf) .* 1e-3 .* g;
-        tempsf = randrange(1, 3, 0, 0.02);
+        tempsf = abs(randnorm(1, 3, -0.02, 0.02, -inf, inf));
     else
         mr = 200 .* g;
         reso = 49 .* 1e-3 .* g;

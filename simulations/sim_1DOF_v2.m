@@ -3,13 +3,12 @@ close all;
 
 %% PHYSICAL PARAMETERS AND CONSTANTS
 
-% using: Turnigy TrackStar 1/8th Sensored Brushless Motor 1900KV 
-% wait that's a lie i made the KV bigger
-Kv = 3700; % Motor Constant (RPM / Volt)
-gear_rat = 1; % gear ratio (RPM / RPM)
+% using: Scorpion HKIV-4020-860KV
+Kv = 860; % Motor Constant (RPM / Volt)
+gear_rat = 2; % gear ratio (RPM / RPM)
 Kt = inv(2*pi*Kv*gear_rat/60); % Kt = 1/Kv if Kv is in (rad/s)/Volt
 % Kt = 318; % Motor Constant (N * m / A)
-D = 1e-5; % Frictional Loss Constant (N * m * s / rad)
+D = 1e-3; % Frictional Loss Constant (N * m * s / rad)
 R = 12e-3; % Motor Resistance (Ohms)
 
 r_robot_im = 5; % robot radius (in)
@@ -27,13 +26,13 @@ slew_rate = 1e40; % V / s
     
 %% SIMULATION PARAMETERS
 
-dt = 1e-6; % modeling physics at this rate (seconds)
+dt = 1e-7; % modeling physics at this rate (seconds)
 Ts = 1/(3.2e3); % algorithms updating at this rate (seconds)
 duration = 8; % simulation duration (seconds)
 
 initial_position = 0; % inital heading (radians)
 initial_velocity = 0; % initial angular velocity (radians / second)
-initial_voltage = 15; % initial motor voltage (volts fuck u think)
+initial_voltage = 6; % initial motor voltage (volts fuck u think)
 initial_extrestorque = 0; % initial external resistive torque (volts)
 
 %% SENSOR PARAMETERS
@@ -43,12 +42,17 @@ g = 9.81; % m / s^2
 sys_temp = 25; % temperature in celsius
 % modeling the ADXL375 accelerometer 
 % www.analog.com/media/en/technical-documentation/data-sheets/ADXL375.pdf
-acc_pos_im = [2 0; 3 0]; % location in polar coordinates, each row is a 
+acc_pos_im = [0.5 0];
+% acc_pos_im = [0.5 0; 0.5 90; 0.5 180; 0.5 270]; 
+% location in polar coordinates, each row is a 
 % different sensor with radius and heading from center (distance in inches)
 acc_pos = [acc_pos_im(:, 1) .* 0.0254 acc_pos_im(:, 2)];
-acc_dir = [0 ; 0]; % angle deviation CW of +y on acc from direction of 
+acc_dir = [-45];
+% acc_dir = [-45 ; -45; -45; -45]; 
+% angle deviation CW of +y on acc from direction of 
 % tangential acceleration if robot rotating CCW
-acc_params = [getAccParams("ADXL375", 1); getAccParams("perfect", 1)];
+acc_params = [getAccParams("ADXL375", 1); getAccParams("ADXL375", 1); ...
+    getAccParams("ADXL375", 1); getAccParams("ADXL375", 1)];
 accs = cell(numel(acc_params), 1);
 for k=1:numel(acc_params)
     accs{k, 1} = imuSensor("accel-mag", "SampleRate", 1/Ts, ...
@@ -159,9 +163,12 @@ axis on; grid on;
 plot(TTplot, yy(:, 2).*180./pi, ...
     TTplot_all, yy_all(:, 2).*180/pi, ...
     'LineWidth', 2);
+hold on;
+yline(18000, "LineWidth", 2);
+hold off;
 ylabel("Angular Velocity (deg/s)");
 xlabel("Time (s)");
-legend("Discrete @ Ts", "Continuous @ dt");
+legend("Discrete @ Ts", "Continuous @ dt", "Target Steady-State");
 
 subplot(Nplot, 1, 3);
 axis on; grid on;
