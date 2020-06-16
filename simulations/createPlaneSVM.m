@@ -28,7 +28,7 @@ J = 2 .* I_wheel + I_robot .* r_wheel .^ 2 ./ (r_robot .^ 2);
    % omegaDot_1 = -alpha * omega_1 + beta * (u_1 - w_1)
    % w is the disturbance input. that can be assumed to be 0
 
-alpha = (Kt.^2 + D .* R ./ 2) ./ (J .* R ./ 2); % in seconds / meter
+alpha = (Kt.^2 + D .* R) ./ (J .* R); % in seconds / meter
 % R / 2 as these are TWO MOTORS acting IDENTICALLY
 beta = Kt ./ (J .* R); % in (V * m)^-1
 % state variables of form [ omega_1; omega_2 ] for wheel angular speeds
@@ -37,7 +37,7 @@ A = [0 1 0 0;
     0 0 -alpha 0;
     0 0 0 -alpha];
 B = [0 0; 
-    (r_wheel .* beta ./ (2*r_robot)) (r_wheel .* beta ./ (2*r_robot));
+    (r_wheel .* beta ./ (2*r_robot)) (r_wheel .* beta ./ (2*r_robot)); %split up these two terms (hence the /2) bc now the motors may not be identical
     beta 0;
     0 beta];
 C = eye(4);

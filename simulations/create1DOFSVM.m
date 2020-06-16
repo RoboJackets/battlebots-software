@@ -29,10 +29,10 @@ alpha = (Kt.^2 + D .* R ./ 2) ./ (J .* R ./ 2); % in seconds / meter
 % R / 2 as these are TWO MOTORS acting IDENTICALLY
 beta = Kt ./ (J .* R); % in (V * m)^-1
 
-A = [0 1; 0 -alpha];
-B = [0 ; (r_wheel .* beta ./ (2*r_robot)) ];
+A = [0 1 ; 0 -alpha];
+B = [0 ; r_wheel .* beta ./ r_robot];
 C = eye(2);
-D = [0 ; 0 ];
+D = [0; 0];
 sys = ss(A, B, C, D);
 
 end
