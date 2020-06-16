@@ -20,6 +20,8 @@ slew_rate = 1e40; % V / s
 
 sys = create1DOFSVM(Kt, D, R, ...
     r_robot_im, w_robot_im, r_wheel_im, w_wheel_im);
+plane_sys = createPlaneSVM(Kt, D, R, ...
+    r_robot_im, w_robot_im, r_wheel_im, w_wheel_im);
 
 %% SIMULATION PARAMETERS
 
@@ -29,8 +31,13 @@ duration = 8; % simulation duration (seconds)
 
 initial_position = 0; % inital heading (radians)
 initial_velocity = 0; % initial angular velocity (radians / second)
-initial_voltage = 15; % initial motor voltage (volts fuck u think)
+initial_voltage = 15;
+initial_left_voltage = 15; % initial motor voltage (volts fuck u think)
+initial_right_voltage = 15; % initial motor voltage (volts fuck u think)
+
 initial_extrestorque = 0; % initial external resistive torque (volts)
+initial_left_wheel_speed = 0; % angular speed of left wheel
+initial_right_wheel_speed = 0; % ... of right wheel
 
 %% ALGORITHM PARAMETERS
 
@@ -42,18 +49,26 @@ initial_extrestorque = 0; % initial external resistive torque (volts)
 sysd = c2d(sys, dt); % ??? discretize ??? maybe ??? faster ???
 
 
-u0 = [initial_voltage initial_extrestorque]; % initial input state
+u0 = [initial_left_voltage initial_extrestorque initial_right_voltage initial_extrestorque]; % initial input state
 x0 = [initial_position initial_velocity]; % initial state space state
+w0 = [initial_left_wheel_speed initial_right_wheel_speed];
 TT = 0:Ts:duration; % algorithm evaluation times (seconds)
 tt = 0:dt:Ts;
 steps = numel(TT)+1; % number of times algorithm is run (#)
-uu = zeros(steps, 2); % all inputs (steps -> motor voltage (volts), 
+uu = zeros(steps, 4); % all inputs (steps -> motor voltage (volts), 
                       %              external resistive torque (volts))
+
+
 yy = zeros(steps, 2); % all states (steps -> angular position in rad, 
                       %                         angular velocity in rad/s)
 yy_all = zeros(numel(tt).*(steps-1), 2); % yy but with like wayyy more
+
+ww = zeros(steps, 2);
+ww_all = zeros(numel(tt).*(steps-1), 2); % ww but with like wayyy more
+
 uu(1, :) = u0;
 yy(1, :) = x0;
+ww(1, :) = w0;
 
 
 for k=2:steps
@@ -65,12 +80,19 @@ for k=2:steps
         [yy(k, :), yy_all_temp] = step1DOFSVM(sys, ...
             yy(k-1, :), uu(k-1, :), ...
             dt, Ts, slew_rate);
+        [ww(k, :), ww_all_temp] = step1DOFSVM(plane_sys, ...
+            ww(k-1, :), uu(k-1, :), ...
+            dt, Ts, slew_rate);
     else
         [yy(k, :), yy_all_temp] = step1DOFSVM(sys, ...
             yy(k-1, :), uu(k-1, :), ...
-            dt, Ts, slew_rate, uu(k-2, :));    
+            dt, Ts, slew_rate, uu(k-2, :));   
+        [ww(k, :), ww_all_temp] = step1DOFSVM(plane_sys, ...
+            ww(k-1, :), uu(k-1, :), ...
+            dt, Ts, slew_rate, uu(k-2, :)); 
     end
     yy_all( ((k-2)*numel(tt)+1) : ((k-1)*numel(tt)), : ) = yy_all_temp;
+    ww_all( ((k-2)*numel(tt)+1) : ((k-1)*numel(tt)), : ) = ww_all_temp;
     
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

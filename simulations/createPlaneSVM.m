@@ -1,7 +1,6 @@
-function [sys, A, B, C, D] = create1DOFSVM(Kt, D, R, r_robot_im, ...
+function [sys, A, B, C, D] = createPlaneSVM(Kt, D, R, r_robot_im, ...
     w_robot_im, r_wheel_im, w_wheel_im)
-% CREATE1DOFSVM   Creates 1DOF SVM for a uniform disk with wheels 
-%                   meltybrain battlebot. 
+% CREATE1DOFSVM   Creates SVM for the spinning wheels of a circular bot
 %
 % sys - A state space object ("ss" object)
 % A, B, C, D - Matrices to define sys using the "ss" MATLAB function
@@ -25,12 +24,17 @@ I_robot = 0.5 .* w_robot .* r_robot .^ 2; % robot body inertia
 I_wheel = 0.5 .* w_wheel .* r_wheel .^ 2; % wheel inertia
 J = 2 .* I_wheel + I_robot .* r_wheel .^ 2 ./ (r_robot .^ 2); 
     % effective inertia 
+
+   % omegaDot_1 = -alpha * omega_1 + beta * (u_1 - w_1)
+   % w is the disturbance input. that can be assumed to be 0
+
 alpha = (Kt.^2 + D .* R ./ 2) ./ (J .* R ./ 2); % in seconds / meter
 % R / 2 as these are TWO MOTORS acting IDENTICALLY
 beta = Kt ./ (J .* R); % in (V * m)^-1
-
-A = [0 1 ; 0 -alpha];
-B = [0 0; (r_wheel .* beta ./ (2*r_robot)) (r_wheel .* beta ./ (2*r_robot))];
+% state variables of form [ omega_1; omega_2 ] for wheel angular speeds
+A = [-alpha 0 ; 0 -alpha];
+% inpute variables of form [ u_1; u_2 ] for input voltage of each wheel
+B = [beta 0; 0 beta];
 C = eye(2);
 D = [0 0; 0 0];
 sys = ss(A, B, C, D);
