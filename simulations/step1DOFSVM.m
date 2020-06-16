@@ -25,6 +25,7 @@ end
 
 tt = 0:dt:Ts; % time vector
 input_voltage = zeros(numel(tt), 2);
+actual_input = zeros(numel(tt), 2);
 input_voltage(:, 1) = prev_input(1) + sr .* tt;
 input_voltage(:, 2) = prev_input(3) + sr .* tt;
 if(input_voltage(:,1) > input(1))% check if slew rate allows for more change than is attempted
