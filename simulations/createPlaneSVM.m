@@ -32,11 +32,16 @@ alpha = (Kt.^2 + D .* R ./ 2) ./ (J .* R ./ 2); % in seconds / meter
 % R / 2 as these are TWO MOTORS acting IDENTICALLY
 beta = Kt ./ (J .* R); % in (V * m)^-1
 % state variables of form [ omega_1; omega_2 ] for wheel angular speeds
-A = [-alpha 0 ; 0 -alpha];
-% inpute variables of form [ u_1; u_2 ] for input voltage of each wheel
-B = [beta 0; 0 beta];
-C = eye(2);
-D = [0 0; 0 0];
+A = [0 1 0 0; 
+    0 -alpha 0 0;
+    0 0 -alpha 0;
+    0 0 0 -alpha];
+B = [0 0; 
+    (r_wheel .* beta ./ (2*r_robot)) (r_wheel .* beta ./ (2*r_robot));
+    beta 0;
+    0 beta];
+C = eye(4);
+D = [0 0; 0 0; 0 0; 0 0];
 sys = ss(A, B, C, D);
 
 end
