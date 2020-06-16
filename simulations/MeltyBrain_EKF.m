@@ -37,8 +37,8 @@ classdef MeltyBrain_EKF < handle
             obj.h = @(omega) repmat([wheelRad * omega ^ 2], imus, 1);
             obj.x = zeros(2, 1);
             obj.P = zeros(2);
-            obj.Q = 1e-6 * eye(2);
-            obj.R = zeros(2);
+            obj.Q = 1e-6 * eye(imus);
+            obj.R = 1e-6 * eye(2);
             obj.imus = imus;
         end
         %% Update
