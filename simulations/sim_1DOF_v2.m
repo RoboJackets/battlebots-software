@@ -19,7 +19,7 @@ w_wheel_im = 0.2; % wheel weight (lbs)
 
 slew_rate = 1e40; % V / s
 
-[sys, A, B, ~, ~] = create1DOFSVM(Kt, D, R, ...
+[sys, A, B, ~, ~, alpha, beta] = create1DOFSVM(Kt, D, R, ...
     r_robot_im, w_robot_im, r_wheel_im, w_wheel_im);
 
 
@@ -90,6 +90,9 @@ for k=1:size(acc_pos, 1)
     acc_data(k, 1, :) = [0 0 0];
 end
 
+%% EKF Setup
+EKF = MeltyBrain_EKF(Ts, alpha, beta, acc_pos(1, 1), 0.0254 .* r_wheel_im, 2);
+
 %% SIMULATION EXECUTION 
 
 for k=2:steps
@@ -115,6 +118,7 @@ for k=2:steps
     % by the accelerometer
     cent_accel = (ang_vel.^2) * acc_pos(:, 1).';
     cent_accel_read = cent_accel(end, :).';
+    
     for kacc = 1:size(acc_pos, 1)
         ay = tang_accel_read(kacc) .* cosd(acc_dir(kacc)) ...
             - cent_accel_read(kacc) .* sind(acc_dir(kacc));
@@ -132,6 +136,9 @@ for k=2:steps
         acc_true(kacc, k, 3) = -g; % for plotting
     end
     
+    %Update the Kalman Filter
+    %EKF.update(cent_accel_read, uu(k, 1));
+    EKF.update(cent_accel_read, u0(1));
     
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -143,32 +150,33 @@ end
 
 %% PHYSICAL QUANTITY PLOTS 
 
-figure('units','normalized','outerposition',[0 0 1 1])
+fig = figure('units','normalized','outerposition',[0 0 1 1])
 Nplot = 3;
 
 TTplot = [TT duration + Ts];
 TTplot_all = linspace(0, TTplot(end), size(yy_all, 1));
 
 subplot(Nplot, 1, 1);
-axis on; grid on;
+axis on; grid on; hold on;
 plot(TTplot, mod(yy(:, 1).*180./pi, 360), ...
     TTplot_all, mod(yy_all(:, 1).*180./pi, 360), ...
     'LineWidth', 2); 
+EKF.plotPos(fig, Nplot, 1, 1);
 ylabel("Angular Position (deg%360)");
 xlabel("Time (s)");
-legend("Discrete @ Ts", "Continuous @ dt");
+legend("Discrete @ Ts", "Continuous @ dt", "EKF Output");
+
 
 subplot(Nplot, 1, 2);
-axis on; grid on;
+axis on; grid on; hold on;
 plot(TTplot, yy(:, 2).*180./pi, ...
     TTplot_all, yy_all(:, 2).*180/pi, ...
     'LineWidth', 2);
-hold on;
 yline(18000, "LineWidth", 2);
-hold off;
+EKF.plotVel(fig, Nplot, 1, 2);
 ylabel("Angular Velocity (deg/s)");
 xlabel("Time (s)");
-legend("Discrete @ Ts", "Continuous @ dt", "Target Steady-State");
+legend("Discrete @ Ts", "Continuous @ dt", "Target Steady-State", "EKF Output");
 
 subplot(Nplot, 1, 3);
 axis on; grid on;

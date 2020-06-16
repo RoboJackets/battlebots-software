@@ -27,18 +27,18 @@ classdef MeltyBrain_EKF < handle
             wheelRad: radius of bot wheels
             imus: number of imus used by the robot
         %}
-        function obj = MeltyBrain_EKF(dt, alpha, beta, botRad, wheelRad, imus)
+        function obj = MeltyBrain_EKF(dt, alpha, beta, accRad, wheelRad, imus)
             obj.dt = dt
             obj.A = [1 dt - 0.5 * alpha * dt ^ 2;
                      0 1 - alpha * dt];
             obj.B = [0.5 * dt ^ 2;
-                     dt] * wheelRad * beta / botRad;
-            obj.H = @(omega) repmat([0 2 * wheelRad * omega], imus, 1); 
-            obj.h = @(omega) repmat([wheelRad * omega ^ 2], imus, 1);
+                     dt] * wheelRad * beta / accRad;
+            obj.H = @(omega) repmat([0 2 * accRad * omega], imus, 1); 
+            obj.h = @(omega) repmat([accRad * omega ^ 2], imus, 1);
             obj.x = zeros(2, 1);
             obj.P = zeros(2);
-            obj.Q = 1e-6 * eye(imus);
-            obj.R = 1e-6 * eye(2);
+            obj.Q = 1e-2 * eye(imus);
+            obj.R = 1e-2 * eye(2);
             obj.imus = imus;
         end
         %% Update
@@ -70,18 +70,26 @@ classdef MeltyBrain_EKF < handle
             obj.predictions = [obj.predictions x];
         end
         %% Plotting 
-        function [] = plotResults(obj)
+        function [] = plotPos(obj, figNum, m, n, subplotIndex)
             T = (0 : length(obj.predictions) - 1) .* obj.dt;
-            figure(1);
-            plot(T, obj.predictions(1, :));
+            figure(figNum);
+            subplot(m, n, subplotIndex);
+            pos = obj.predictions(1, :) .* 180 / pi;
+            pos = mod(pos, 360);
+            plot(T, pos, 'g--', 'LineWidth', 2);
             title('EKF Angular Position');
             xlabel('Time (s)');
-            ylabel('Angular Position (rad)');
-            figure(2);
-            plot(T, obj.predictions(2, :));
+            ylabel('Angular Position (deg)');
+        end
+        
+        function [] = plotVel(obj, figNum, m, n, subplotIndex)
+            T = (0 : length(obj.predictions) - 1) .* obj.dt;
+            figure(figNum);
+            subplot(m, n, subplotIndex);
+            plot(T, obj.predictions(2, :) .* 180 / pi, 'g--', 'LineWidth', 2);
             title('EKF Angular Velocity');
             xlabel('Time (s)');
-            ylabel('Angular Velocity (rad/s)');
+            ylabel('Angular Velocity (deg/s)');
         end
     end
 end
