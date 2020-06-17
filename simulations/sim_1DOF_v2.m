@@ -42,18 +42,17 @@ g = 9.81; % m / s^2
 sys_temp = 25; % temperature in celsius
 % modeling the ADXL375 accelerometer 
 % www.analog.com/media/en/technical-documentation/data-sheets/ADXL375.pdf
-acc_pos_im = [0.5 0; 0.5 90];
-% acc_pos_im = [0.5 0; 0.5 90; 0.5 180; 0.5 270]; 
+acc_pos_im = [0.5 0; 0.5 90; 0.5 180; 0.5 270];
 % location in polar coordinates, each row is a 
 % different sensor with radius and heading from center (distance in inches)
 acc_pos = [acc_pos_im(:, 1) .* 0.0254 acc_pos_im(:, 2)];
-acc_dir = [-45; 0];
-% acc_dir = [-45 ; -45; -45; -45]; 
+acc_dir = [-45 ; -45; -45; -45]; 
 % angle deviation CW of +y on acc from direction of 
 % tangential acceleration if robot rotating CCW
-acc_params = [getAccParams("ADXL375", 1); getAccParams("ADXL375", 1)];
+acc_params = [];
 accs = cell(numel(acc_params), 1);
-for k=1:numel(acc_params)
+for k=1:size(acc_pos, 1)
+    acc_params = [acc_params ; getAccParams("ADXL375", 1)];
     accs{k, 1} = imuSensor("accel-mag", "SampleRate", 1/Ts, ...
         "Temperature", sys_temp, ...
         "Accelerometer", acc_params(k));
