@@ -26,13 +26,13 @@ slew_rate = 1e40; % V / s
     
 %% SIMULATION PARAMETERS
 
-dt = 1e-6; % modeling physics at this rate (seconds)
+dt = 1e-5; % modeling physics at this rate (seconds)
 Ts = 1/(3.2e3); % algorithms updating at this rate (seconds)
 duration = 8; % simulation duration (seconds)
 
 initial_position = 0; % inital heading (radians)
 initial_velocity = 0; % initial angular velocity (radians / second)
-initial_voltage = 6; % initial motor voltage (volts fuck u think)
+initial_voltage = 0; % initial motor voltage (volts fuck u think)
 initial_extrestorque = 0; % initial external resistive torque (volts)
 
 %% SENSOR PARAMETERS
@@ -51,19 +51,13 @@ acc_dir = [-45; 0];
 % acc_dir = [-45 ; -45; -45; -45]; 
 % angle deviation CW of +y on acc from direction of 
 % tangential acceleration if robot rotating CCW
-acc_params = [getAccParams("ADXL375", 1); getAccParams("ADXL375", 1); ...
-    getAccParams("ADXL375", 1); getAccParams("ADXL375", 1)];
+acc_params = [getAccParams("ADXL375", 1); getAccParams("ADXL375", 1)];
 accs = cell(numel(acc_params), 1);
 for k=1:numel(acc_params)
     accs{k, 1} = imuSensor("accel-mag", "SampleRate", 1/Ts, ...
         "Temperature", sys_temp, ...
         "Accelerometer", acc_params(k));
 end
-
-%% ALGORITHM PARAMETERS
-
-% shit goes here think of something smart varun i can't do all the heavy
-%  lifting jeez
 
 %% SIMULATION SETUP
 
@@ -91,6 +85,10 @@ for k=1:size(acc_pos, 1)
 end
 
 %% EKF Setup
+targ_angvel = 3000 / 60 * 2 * pi; % target angular velocity
+deltaVolt = 1e-1; % max change in volts every Ts
+maxVolt = 22; % max voltage we can input
+minVolt = -22; % min voltage we can input
 EKF = MeltyBrain_EKF(Ts, alpha, beta, acc_pos(1, 1), 0.0254 .* r_wheel_im, 2);
 
 %% SIMULATION EXECUTION 
@@ -138,13 +136,22 @@ for k=2:steps
     
     %Update the Kalman Filter
     %EKF.update(cent_accel_read, uu(k, 1));
-    EKF.update(cent_accel_read, u0(1));
+    pred = EKF.update(cent_accel_read, uu(k-1, 1));
     
-    
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % ALGO GOES HERE BUT HERE'S THE LOGIC FOR NOW %
-    uu(k, :) = uu(k-1, :); % CLOSED-EYE KALMAN 
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
+    % Algo
+    if pred(2) > targ_angvel
+        uu(k, :) = [uu(k-1, 1) - deltaVolt 0];
+        if uu(k, 1) < minVolt
+            uu(k, 1) = minVolt;
+        end
+    elseif pred(2) < targ_angvel
+        uu(k, :) = [uu(k-1, 1) + deltaVolt 0];
+        if uu(k, 1) > maxVolt
+            uu(k, 1) = maxVolt;
+        end
+    else
+        uu(k, :) = uu(k-1, :);
+    end
     
 end
 
