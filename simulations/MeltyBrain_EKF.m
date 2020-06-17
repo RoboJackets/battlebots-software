@@ -90,7 +90,7 @@ classdef MeltyBrain_EKF < handle
             pos = obj.predictions(1, :) .* 180 / pi;
             pos = mod(pos, 360);
             plot(T, pos, 'g--', 'LineWidth', 2);
-            title('EKF Angular Position');
+            title('Angular Position');
             xlabel('Time (s)');
             ylabel('Angular Position (deg)');
         end
@@ -105,7 +105,7 @@ classdef MeltyBrain_EKF < handle
             figure(figNum);
             subplot(m, n, subplotIndex);
             plot(T, obj.predictions(2, :) .* 180 / pi, 'g--', 'LineWidth', 2);
-            title('EKF Angular Velocity');
+            title('Angular Velocity');
             xlabel('Time (s)');
             ylabel('Angular Velocity (deg/s)');
         end

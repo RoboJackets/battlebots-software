@@ -5,7 +5,7 @@ close all;
 
 % using: Scorpion HKIV-4020-860KV
 Kv = 860; % Motor Constant (RPM / Volt)
-gear_rat = 2; % gear ratio (RPM / RPM)
+gear_rat = 8; % gear ratio (RPM / RPM)
 Kt = inv(2*pi*Kv*gear_rat/60); % Kt = 1/Kv if Kv is in (rad/s)/Volt
 % Kt = 318; % Motor Constant (N * m / A)
 D = 1e-3; % Frictional Loss Constant (N * m * s / rad)
@@ -16,6 +16,8 @@ w_robot_im = 11.8; % robot weight (lbs)
 r_wheel_im = 2.5; % wheel radius (in)
 w_wheel_im = 0.2; % wheel weight (lbs)
 % the im suffix stands for imperial 
+
+mu_static = 0.8; %Coefficient of static friction between wheel and ground
 
 slew_rate = 1e40; % V / s
 
@@ -28,7 +30,7 @@ slew_rate = 1e40; % V / s
 
 dt = 1e-5; % modeling physics at this rate (seconds)
 Ts = 1/(3.2e3); % algorithms updating at this rate (seconds)
-duration = 8; % simulation duration (seconds)
+duration = 6; % simulation duration (seconds)
 
 initial_position = 0; % inital heading (radians)
 initial_velocity = 0; % initial angular velocity (radians / second)
@@ -155,41 +157,64 @@ for k=2:steps
     
 end
 
+%% DETERMINE ANGULAR ACCELERATION
+dV_all = diff(yy_all(:, 2));    %Calculates the difference between each element of yy_all(:, 2)
+a_all = dV_all ./ dt;           %a = dV / dt
+
+%% CALCULATE MAX ANGULAR ACCELERATION
+%The maximum force of static friction on each wheel
+%Given by half the weight of the robot (converted to N) * static friction
+%coefficient
+w_robot = w_robot_im * 0.453592; %Convert to MKS units
+r_robot = r_robot_im * 0.0254
+I_robot = 0.5 .* w_robot .* r_robot .^ 2; % robot body inertia
+
+f_max = mu_static * (w_robot / 2) * g; 
+torque_max = 2 * f_max * r_robot;
+a_max = torque_max / I_robot %Torque = I * a
+
 %% PHYSICAL QUANTITY PLOTS 
 
-fig = figure('units','normalized','outerposition',[0 0 1 1])
-Nplot = 3;
+fig = figure('units','normalized','outerposition',[0 0 1 1]);
 
 TTplot = [TT duration + Ts];
 TTplot_all = linspace(0, TTplot(end), size(yy_all, 1));
 
-subplot(Nplot, 1, 1);
+subplot(2, 2, 1);
 axis on; grid on; hold on;
 plot(TTplot, mod(yy(:, 1).*180./pi, 360), ...
     TTplot_all, mod(yy_all(:, 1).*180./pi, 360), ...
     'LineWidth', 2); 
-EKF.plotPos(fig, Nplot, 1, 1);
+EKF.plotPos(fig, 2, 2, 1);
 ylabel("Angular Position (deg%360)");
 xlabel("Time (s)");
 legend("Discrete @ Ts", "Continuous @ dt", "EKF Output");
 
 
-subplot(Nplot, 1, 2);
+subplot(2, 2, 2);
 axis on; grid on; hold on;
 plot(TTplot, yy(:, 2).*180./pi, ...
     TTplot_all, yy_all(:, 2).*180/pi, ...
     'LineWidth', 2);
 yline(18000, "LineWidth", 2);
-EKF.plotVel(fig, Nplot, 1, 2);
+EKF.plotVel(fig, 2, 2, 2);
 ylabel("Angular Velocity (deg/s)");
 xlabel("Time (s)");
 legend("Discrete @ Ts", "Continuous @ dt", "Target Steady-State", "EKF Output");
 
-subplot(Nplot, 1, 3);
+subplot(2, 2, 3);
 axis on; grid on;
 plot(TTplot, uu(:, 1), 'LineWidth', 2);
 ylabel("Input Voltage (V)");
 xlabel("Time (s)");
+
+subplot(2, 2, 4);
+axis on; grid on; hold on;
+plot(TTplot_all(1 : end - 1), a_all .* 180 / pi, 'g-', 'LineWidth', 2);
+yline(a_max .* 180 / pi, 'LineWidth', 2);
+ylabel("Angular Acceleration (deg/s^2)");
+xlabel("Time (s)");
+legend("Angular Acceleration", "Maximum Angular Acceleration");
 
 sgtitle(sprintf(['Robot Dynamic Modeling: Kv=%.2e, D=%.3f, R=%.3f, ', ...
     'BotR=%.1f, BotW=%.1f, WheelR=%.1f, WheelW=%.1f, SR=%.1e, ', ...
@@ -197,6 +222,7 @@ sgtitle(sprintf(['Robot Dynamic Modeling: Kv=%.2e, D=%.3f, R=%.3f, ', ...
     Kv, D, R, r_robot_im, w_robot_im, r_wheel_im, w_wheel_im, ...
     slew_rate, Ts, dt), ...
     "FontSize", 18);
+
 
 %% SENSOR READING PLOTS
 
