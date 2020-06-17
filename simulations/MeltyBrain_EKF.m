@@ -14,6 +14,7 @@ classdef MeltyBrain_EKF < handle
         Q %Sensor noise covariance
 
         imus %Number of imus used
+        count %Internal counter to determine number of times updated
     end
     methods
         %% Constructor
@@ -21,25 +22,33 @@ classdef MeltyBrain_EKF < handle
             Constructs a kalman filtering object with specified params
         
             dt: Time step
+            Tsim: Total simulation time
             alpha: motor parameter
             beta: motor parameter
-            botRad: radius from bot center to wheel
+            accRad: radius from bot center to accelerometers
             wheelRad: radius of bot wheels
             imus: number of imus used by the robot
         %}
-        function obj = MeltyBrain_EKF(dt, alpha, beta, accRad, wheelRad, imus)
+        function obj = MeltyBrain_EKF(dt, Tsim, alpha, beta, accRad, wheelRad, imus)
             obj.dt = dt
+            %Define discrete time dynamics
             obj.A = [1 dt - 0.5 * alpha * dt ^ 2;
                      0 1 - alpha * dt];
             obj.B = [0.5 * dt ^ 2;
                      dt] * wheelRad * beta / accRad;
+            %Create state to observation transformation matrix handles
+            obj.imus = imus;
             obj.H = @(omega) repmat([0 2 * accRad * omega], imus, 1); 
             obj.h = @(omega) repmat([accRad * omega ^ 2], imus, 1);
+            %Initial state and covariances at 0
             obj.x = zeros(2, 1);
             obj.P = zeros(2);
-            obj.Q = 1e-2 * eye(imus);
-            obj.R = 1e-2 * eye(2);
-            obj.imus = imus;
+            %Set process and sensor noise covariances
+            obj.Q = 1e-5 * eye(imus);
+            obj.R = 1e1 * eye(2);
+            %Preallocate predictions matrix for efficiency
+            obj.predictions = zeros(2, floor(Tsim / dt));
+            obj.count = 0;
         end
         %% Update
         %{
@@ -50,26 +59,30 @@ classdef MeltyBrain_EKF < handle
             u: voltage input to the motor system
         %}
         function x = update(obj, meas, u)
+            %Update counter
+            obj.count = obj.count + 1;
             %Predict
             obj.x = obj.A * obj.x + obj.B * u;
             obj.P = obj.A * obj.P * obj.A' + obj.R;
-            
             %Calculate Jacobian: evaluate H with angular velocity (x(2))
             omega = obj.x(2);
             H_t = obj.H(omega);
-            
             %Update
             K = obj.P * H_t' * inv(H_t * obj.P * H_t' + obj.Q);
             obj.x = obj.x + K * (meas - obj.h(omega));
             obj.P = (eye(2) - K * H_t) * obj.P;
-            
             %Set value for returning
             x = obj.x;
-            
             %Append to predictions
-            obj.predictions = [obj.predictions x];
+            obj.predictions(:, obj.count) = x;
         end
         %% Plotting 
+        %{
+            Plots the predicted angular position of the robot
+            
+            figNum: the figure handle to plot on
+            m, n, subplotIndex: subplot specifiers
+        %}
         function [] = plotPos(obj, figNum, m, n, subplotIndex)
             T = (0 : length(obj.predictions) - 1) .* obj.dt;
             figure(figNum);
@@ -81,7 +94,12 @@ classdef MeltyBrain_EKF < handle
             xlabel('Time (s)');
             ylabel('Angular Position (deg)');
         end
-        
+        %{
+            Plots the predicted angular velocity of the robot
+            
+            figNum: the figure handle to plot on
+            m, n, subplotIndex: subplot specifiers
+        %}
         function [] = plotVel(obj, figNum, m, n, subplotIndex)
             T = (0 : length(obj.predictions) - 1) .* obj.dt;
             figure(figNum);

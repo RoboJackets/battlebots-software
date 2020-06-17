@@ -89,7 +89,7 @@ targ_angvel = 3000 / 60 * 2 * pi; % target angular velocity
 deltaVolt = 1e-1; % max change in volts every Ts
 maxVolt = 22; % max voltage we can input
 minVolt = -22; % min voltage we can input
-EKF = MeltyBrain_EKF(Ts, alpha, beta, acc_pos(1, 1), 0.0254 .* r_wheel_im, 2);
+EKF = MeltyBrain_EKF(Ts, duration, alpha, beta, acc_pos(1, 1), 0.0254 .* r_wheel_im, 2);
 
 %% SIMULATION EXECUTION 
 
@@ -134,8 +134,8 @@ for k=2:steps
         acc_true(kacc, k, 3) = -g; % for plotting
     end
     
-    %Update the Kalman Filter
-    %EKF.update(cent_accel_read, uu(k, 1));
+    %Update the Kalman Filter with the accelerometer reading and commanded
+    %voltage
     pred = EKF.update(cent_accel_read, uu(k-1, 1));
     
     % Algo
