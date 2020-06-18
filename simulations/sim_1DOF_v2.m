@@ -90,7 +90,7 @@ targ_angvel = 3000 / 60 * 2 * pi; % target angular velocity
 deltaVolt = 1e-1; % max change in volts every Ts
 maxVolt = 22; % max voltage we can input
 minVolt = -22; % min voltage we can input
-EKF = MeltyBrain_EKF(Ts, duration, alpha, beta, acc_pos(1, 1), 0.0254 .* r_wheel_im, 2);
+EKF = MeltyBrain_EKF(Ts, duration, alpha, beta, acc_pos(1, 1), 0.0254 .* r_wheel_im, size(acc_pos, 1));
 
 %% SIMULATION EXECUTION 
 
