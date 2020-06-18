@@ -30,7 +30,7 @@ slew_rate = 1e40; % V / s
 
 dt = 1e-5; % modeling physics at this rate (seconds)
 Ts = 1/(3.2e3); % algorithms updating at this rate (seconds)
-duration = 6; % simulation duration (seconds)
+duration = 10; % simulation duration (seconds)
 
 initial_position = 0; % inital heading (radians)
 initial_velocity = 0; % initial angular velocity (radians / second)
@@ -102,7 +102,11 @@ targ_angvel = 3000 / 60 * 2 * pi; % target angular velocity
 deltaVolt = 1e-1; % max change in volts every Ts
 maxVolt = 22; % max voltage we can input
 minVolt = -22; % min voltage we can input
-EKF = MeltyBrain_EKF(Ts, duration, alpha, beta, acc_pos(1, 1), 0.0254 .* r_wheel_im, size(acc_pos, 1));
+EKF = MeltyBrain_EKF(Ts, duration, alpha, beta, acc_pos(1, 1), 0.0254 .* r_wheel_im, ...
+                     size(acc_pos, 1), 0, nan, nan, true, .1);
+%Constructor arguments:
+%MeltyBrain_EKF(dt, Tsim, alpha, beta, accRad, wheelRad, ...
+%imus, mags, maxBField, fieldOffset, beacon, beaconRange)
 
 %% SIMULATION EXECUTION 
 
@@ -159,8 +163,17 @@ for k=2:steps
     tang_accel_guess = ...
         -reshape(acc_data(:, k, 1), [numel(acc_dir) 1]) .* sind(acc_dir) ...
         + reshape(acc_data(:, k, 2), [numel(acc_dir) 1]) .* cosd(acc_dir);
+    % Assemble measurement vector
+    meas = abs(cent_accel_guess);
+    if(EKF.mags > 0)
+        %TODO: Add magnetometer readigns
+    end
+    if(EKF.beacon)
+        angle = mod(yy(k - 1, 1), 2 * pi);  %True angle constrained to range [0, 2 * pi)
+        meas = [meas ; (angle < .1 | angle > 2 * pi - .1)]; %Returns 1 if the angle is in range
+    end
     % predict state using EKF
-    pred = EKF.update(abs(cent_accel_guess), uu(k-1, 1));
+    pred = EKF.update(meas, uu(k-1, 1));
     
     % Algo
     if pred(2) > targ_angvel
@@ -184,7 +197,7 @@ dV_all = diff(yy_all(:, 2));    %Calculates the difference between each element 
 a_all = dV_all ./ dt;           %a = dV / dt
 
 
-%% PHYSICAL QUANTITY PLOTS 
+%% PHYSICAL QUANTITY PLOTS
 
 fig = figure('units','normalized','outerposition',[0 0 1 1]);
 
@@ -193,14 +206,17 @@ TTplot_all = linspace(0, TTplot(end), size(yy_all, 1));
 
 subplot(2, 2, 1);
 axis on; grid on; hold on;
-plot(TTplot, mod(yy(:, 1).*180./pi, 360), ...
-    TTplot_all, mod(yy_all(:, 1).*180./pi, 360), ...
+plot(TTplot, yy(:, 1).*180./pi, ...
+    TTplot_all, yy_all(:, 1).*180./pi, ...
     'LineWidth', 2); 
 EKF.plotPos(fig, 2, 2, 1);
 ylabel("Angular Position (deg%360)");
 xlabel("Time (s)");
+xlim([0 1]);
+for i = 1 : 10
+    yline(360 * i, 'LineWidth', 1);
+end
 legend("Discrete @ Ts", "Continuous @ dt", "EKF Output");
-
 
 subplot(2, 2, 2);
 axis on; grid on; hold on;
@@ -331,7 +347,7 @@ end
 sgtitle("Accelerometers", "FontSize", 18);
 
 %% EKF ERROR PLOTS
-error = abs(EKF.predictions' - yy);
+error = EKF.predictions' - yy;
 figure('units','normalized','outerposition',[0 0 1 1])
 
 subplot(1, 2, 1);
@@ -339,11 +355,11 @@ axis on; grid on; hold on;
 plot(TTplot, error(:, 1) .* 180 / pi, 'LineWidth', 2);
 title('EKF Position Error');
 xlabel('Time (s)');
-ylabel('Position Error (deg)', 'LineWidth', 2);
+ylabel('Position Error (deg)');
 
 subplot(1, 2, 2);
 axis on; grid on; hold on;
-plot(TTplot, error(:, 2) .* 180 / pi);
+plot(TTplot, lowpass(error(:, 2), .5) .* 180 / pi, 'LineWidth', 2);
 title('EKF Velocity Error');
 xlabel('Time (s)');
 ylabel('Velocity Error (deg/s)');
