@@ -183,6 +183,7 @@ end
 dV_all = diff(yy_all(:, 2));    %Calculates the difference between each element of yy_all(:, 2)
 a_all = dV_all ./ dt;           %a = dV / dt
 
+
 %% PHYSICAL QUANTITY PLOTS 
 
 fig = figure('units','normalized','outerposition',[0 0 1 1]);
@@ -328,3 +329,25 @@ for k=1:Nacc
 end
 
 sgtitle("Accelerometers", "FontSize", 18);
+
+%% EKF ERROR PLOTS
+error = abs(EKF.predictions' - yy);
+figure('units','normalized','outerposition',[0 0 1 1])
+
+subplot(1, 2, 1);
+axis on; grid on; hold on;
+plot(TTplot, error(:, 1) .* 180 / pi, 'LineWidth', 2);
+title('EKF Position Error');
+xlabel('Time (s)');
+ylabel('Position Error (deg)', 'LineWidth', 2);
+
+subplot(1, 2, 2);
+axis on; grid on; hold on;
+plot(TTplot, error(:, 2) .* 180 / pi);
+title('EKF Velocity Error');
+xlabel('Time (s)');
+ylabel('Velocity Error (deg/s)');
+
+sgtitle("EKF Error", "FontSize", 18);
+
+

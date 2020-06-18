@@ -44,11 +44,11 @@ classdef MeltyBrain_EKF < handle
             obj.x = zeros(2, 1);
             obj.P = zeros(2);
             %Set process and sensor noise covariances
-            obj.Q = 1e-1 * eye(imus);
-            obj.R = 1e3 * eye(2);
+            obj.Q = 4e1 * eye(imus);
+            obj.R = 1e2 * eye(2);
             %Preallocate predictions matrix for efficiency
-            obj.predictions = zeros(2, floor(Tsim / dt));
-            obj.count = 0;
+            obj.predictions = zeros(2, ceil(Tsim / dt) + 2);
+            obj.count = 1;
         end
         %% Update
         %{
