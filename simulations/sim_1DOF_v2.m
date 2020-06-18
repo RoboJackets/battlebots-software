@@ -160,7 +160,7 @@ for k=2:steps
         -reshape(acc_data(:, k, 1), [numel(acc_dir) 1]) .* sind(acc_dir) ...
         + reshape(acc_data(:, k, 2), [numel(acc_dir) 1]) .* cosd(acc_dir);
     % predict state using EKF
-    pred = EKF.update(cent_accel_guess, uu(k-1, 1));
+    pred = EKF.update(abs(cent_accel_guess), uu(k-1, 1));
     
     % Algo
     if pred(2) > targ_angvel
