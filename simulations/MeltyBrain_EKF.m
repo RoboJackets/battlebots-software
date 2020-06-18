@@ -30,7 +30,7 @@ classdef MeltyBrain_EKF < handle
             imus: number of imus used by the robot
         %}
         function obj = MeltyBrain_EKF(dt, Tsim, alpha, beta, accRad, wheelRad, imus)
-            obj.dt = dt
+            obj.dt = dt;
             %Define discrete time dynamics
             obj.A = [1 dt - 0.5 * alpha * dt ^ 2;
                      0 1 - alpha * dt];
@@ -44,8 +44,8 @@ classdef MeltyBrain_EKF < handle
             obj.x = zeros(2, 1);
             obj.P = zeros(2);
             %Set process and sensor noise covariances
-            obj.Q = 1e-5 * eye(imus);
-            obj.R = 1e1 * eye(2);
+            obj.Q = 1e-1 * eye(imus);
+            obj.R = 1e3 * eye(2);
             %Preallocate predictions matrix for efficiency
             obj.predictions = zeros(2, floor(Tsim / dt));
             obj.count = 0;
@@ -68,7 +68,7 @@ classdef MeltyBrain_EKF < handle
             omega = obj.x(2);
             H_t = obj.H(omega);
             %Update
-            K = obj.P * H_t' * inv(H_t * obj.P * H_t' + obj.Q);
+            K = obj.P * H_t' / (H_t * obj.P * H_t' + obj.Q);
             obj.x = obj.x + K * (meas - obj.h(omega));
             obj.P = (eye(2) - K * H_t) * obj.P;
             %Set value for returning
