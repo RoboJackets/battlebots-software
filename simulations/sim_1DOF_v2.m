@@ -30,31 +30,43 @@ slew_rate = 1e40; % V / s
 
 dt = 1e-5; % modeling physics at this rate (seconds)
 Ts = 1/(3.2e3); % algorithms updating at this rate (seconds)
-duration = 10; % simulation duration (seconds)
+duration = 6; % simulation duration (seconds)
 
 initial_position = 0; % inital heading (radians)
 initial_velocity = 0; % initial angular velocity (radians / second)
 initial_voltage = 0; % initial motor voltage (volts fuck u think)
 initial_extrestorque = 0; % initial external resistive torque (volts)
 
+use_perfect_accs = false;
+use_ir_beacons = true;
+
+
 %% SENSOR PARAMETERS
+
+ir_eps = 1e-1; % epsilon for detecting ir beacon
+
 
 % all angles are in degrees for defining parameters ok just deal
 g = 9.81; % m / s^2
 sys_temp = 25; % temperature in celsius
 % modeling the ADXL375 accelerometer 
 % www.analog.com/media/en/technical-documentation/data-sheets/ADXL375.pdf
-acc_pos_im = [0.5 0; 0.5 90];
+acc_pos_im = [0.5 0; 0.5 90; 0.5 180; 0.5 270];
 % location in polar coordinates, each row is a 
 % different sensor with radius and heading from center (distance in inches)
 acc_pos = [acc_pos_im(:, 1) .* 0.0254 acc_pos_im(:, 2)];
-acc_dir = [40 ; 40]; 
+acc_dir = [40 ; 40; 40; 40]; 
 % angle deviation CW of +y on acc from direction of 
 % tangential acceleration if robot rotating CCW
 acc_params = [];
 accs = cell(numel(acc_params), 1);
 for k=1:size(acc_pos, 1)
-    acc_params = [acc_params ; getAccParams("ADXL375", 1)];
+    if use_perfect_accs
+        acc_params = [acc_params ; getAccParams("perfect", 1)];        
+    else
+        acc_params = [acc_params ; getAccParams("ADXL375", 1)];
+    end
+
     accs{k, 1} = imuSensor("accel-mag", "SampleRate", 1/Ts, ...
         "Temperature", sys_temp, ...
         "Accelerometer", acc_params(k));
@@ -103,7 +115,7 @@ deltaVolt = 1e-1; % max change in volts every Ts
 maxVolt = 22; % max voltage we can input
 minVolt = -22; % min voltage we can input
 EKF = MeltyBrain_EKF(Ts, duration, alpha, beta, acc_pos(1, 1), 0.0254 .* r_wheel_im, ...
-                     size(acc_pos, 1), 0, nan, nan, true, .1);
+                     size(acc_pos, 1), 0, nan, nan, use_ir_beacons, ir_eps);
 %Constructor arguments:
 %MeltyBrain_EKF(dt, Tsim, alpha, beta, accRad, wheelRad, ...
 %imus, mags, maxBField, fieldOffset, beacon, beaconRange)
@@ -170,7 +182,7 @@ for k=2:steps
     end
     if(EKF.beacon)
         angle = mod(yy(k - 1, 1), 2 * pi);  %True angle constrained to range [0, 2 * pi)
-        meas = [meas ; (angle < .1 | angle > 2 * pi - .1)]; %Returns 1 if the angle is in range
+        meas = [meas ; (angle < ir_eps | angle > 2 * pi - ir_eps)]; %Returns 1 if the angle is in range
     end
     % predict state using EKF
     pred = EKF.update(meas, uu(k-1, 1));
