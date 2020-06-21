@@ -30,7 +30,7 @@ slew_rate = 1e40; % V / s
 
 dt = 1e-5; % modeling physics at this rate (seconds)
 Ts = 1/(3.2e3); % algorithms updating at this rate (seconds)
-duration = 6; % simulation duration (seconds)
+duration = 5; % simulation duration (seconds)
 
 initial_position = 0; % inital heading (radians)
 initial_velocity = 0; % initial angular velocity (radians / second)
@@ -76,13 +76,13 @@ end
 %The maximum force of static friction on each wheel
 %Given by half the weight of the robot (converted to N) * static friction
 %coefficient
-w_robot = w_robot_im * 0.453592; %Convert to MKS units
+w_robot = w_robot_im * 0.453592;          %Convert to MKS units
 r_robot = r_robot_im * 0.0254;
-I_robot = 0.5 .* w_robot .* r_robot .^ 2; % robot body inertia
+I_robot = 0.5 .* w_robot .* r_robot .^ 2; %Robot body inertia
 
 f_max = mu_static * (w_robot / 2) * g; 
 torque_max = 2 * f_max * r_robot;
-a_max = torque_max / I_robot; %Torque = I * a
+a_max = torque_max / I_robot;             %Torque = I * a
 
 %% SIMULATION SETUP
 
@@ -91,10 +91,10 @@ sysd = sys;
 
 
 u0 = [initial_voltage initial_extrestorque]; % initial input state
-x0 = [initial_position initial_velocity]; % initial state space state
-TT = 0:Ts:duration; % algorithm evaluation times (seconds)
+x0 = [initial_position initial_velocity];    % initial state space state
+TT = 0:Ts:duration;   % algorithm evaluation times (seconds)
 tt = 0:dt:Ts;
-steps = numel(TT)+1; % number of times algorithm is run (#)
+steps = numel(TT)+1;  % number of times algorithm is run (#)
 uu = zeros(steps, 2); % all inputs (steps -> motor voltage (volts), 
                       %              external resistive torque (volts))
 yy = zeros(steps, 2); % all states (steps -> angular position in rad, 
@@ -114,11 +114,9 @@ targ_angvel = 3000 / 60 * 2 * pi; % target angular velocity
 deltaVolt = 1e-1; % max change in volts every Ts
 maxVolt = 22; % max voltage we can input
 minVolt = -22; % min voltage we can input
-EKF = MeltyBrain_EKF(Ts, duration, alpha, beta, acc_pos(1, 1), 0.0254 .* r_wheel_im, ...
-                     size(acc_pos, 1), 0, nan, nan, use_ir_beacons, ir_eps);
-%Constructor arguments:
-%MeltyBrain_EKF(dt, Tsim, alpha, beta, accRad, wheelRad, ...
-%imus, mags, maxBField, fieldOffset, beacon, beaconRange)
+%                      dt  alpha  beta  accR,          wheelR                botR                  imus
+HEKF = MeltyBrain_HEKF(dt, alpha, beta, acc_pos(1, 1), 0.0254 .* r_wheel_im, 0.0254 .* r_robot_im, size(acc_pos, 1))
+ 
 
 %% SIMULATION EXECUTION 
 
@@ -153,9 +151,9 @@ for k=2:steps
             - tang_accel_read(kacc) .* sind(acc_dir(kacc));
         acc_true(kacc, k, :) = [ax ay 0];
         curr_acc = accs{kacc, 1};
-%         [acc_readings, ~] = curr_acc(squeeze(acc_true(kacc, 1:k, :)), ...
-%             [zeros(k, 2) yy(1:k, 2)]);
-%         acc_data(kacc, k, :) = acc_readings(end, :);
+%       [acc_readings, ~] = curr_acc(squeeze(acc_true(kacc, 1:k, :)), ...
+%           [zeros(k, 2) yy(1:k, 2)]);
+%           acc_data(kacc, k, :) = acc_readings(end, :);
         [acc_readings, ~] = curr_acc( ...
             reshape(acc_true(kacc, k, :), [1 3]), ...
             [0 0 0]);
@@ -175,19 +173,21 @@ for k=2:steps
     tang_accel_guess = ...
         -reshape(acc_data(:, k, 1), [numel(acc_dir) 1]) .* sind(acc_dir) ...
         + reshape(acc_data(:, k, 2), [numel(acc_dir) 1]) .* cosd(acc_dir);
-    % Assemble measurement vector
-    meas = abs(cent_accel_guess);
-    if(EKF.mags > 0)
-        %TODO: Add magnetometer readigns
-    end
-    if(EKF.beacon)
-        angle = mod(yy(k - 1, 1), 2 * pi);  %True angle constrained to range [0, 2 * pi)
-        meas = [meas ; (angle < ir_eps | angle > 2 * pi - ir_eps)]; %Returns 1 if the angle is in range
-    end
-    % predict state using EKF
-    pred = EKF.update(meas, uu(k-1, 1));
     
-    % Algo
+    % Assemble accelerometer measurements
+    meas = abs(cent_accel_guess);
+    % Predict state using EKF
+    %                  meas  u             t       sensor
+    pred = HEKF.update(meas, uu(k - 1, 1), k * Ts, 'acc');
+    
+    % Assemble beacon measurements
+    angle = wrapToPi(yy(k - 1, 1)) * 180 / pi;
+    inRange = (angle < 1 && angle > -1);
+    if(use_ir_beacons && inRange)
+        pred = HEKF.update(0, uu(k - 1, 1), k * Ts, 'beacon');
+    end
+    
+    % Velocity limiting algorithm
     if pred(2) > targ_angvel
         uu(k, :) = [uu(k-1, 1) - deltaVolt 0];
         if uu(k, 1) < minVolt
@@ -218,16 +218,13 @@ TTplot_all = linspace(0, TTplot(end), size(yy_all, 1));
 
 subplot(2, 2, 1);
 axis on; grid on; hold on;
-plot(TTplot, yy(:, 1).*180./pi, ...
-    TTplot_all, yy_all(:, 1).*180./pi, ...
+plot(TTplot, wrapToPi(yy(:, 1)) .*180./pi, ...
+    TTplot_all, wrapToPi(yy_all(:, 1)).*180./pi, ...
     'LineWidth', 2); 
-EKF.plotPos(fig, 2, 2, 1);
+HEKF.plotPos(fig, 2, 2, 1);
 ylabel("Angular Position (deg%360)");
 xlabel("Time (s)");
 xlim([0 1]);
-for i = 1 : 10
-    yline(360 * i, 'LineWidth', 1);
-end
 legend("Discrete @ Ts", "Continuous @ dt", "EKF Output");
 
 subplot(2, 2, 2);
@@ -236,7 +233,7 @@ plot(TTplot, yy(:, 2).*180./pi, ...
     TTplot_all, yy_all(:, 2).*180/pi, ...
     'LineWidth', 2);
 yline(18000, "LineWidth", 2);
-EKF.plotVel(fig, 2, 2, 2);
+HEKF.plotVel(fig, 2, 2, 2);
 ylabel("Angular Velocity (deg/s)");
 xlabel("Time (s)");
 legend("Discrete @ Ts", "Continuous @ dt", "Target Steady-State", "EKF Output");
@@ -358,24 +355,26 @@ end
 
 sgtitle("Accelerometers", "FontSize", 18);
 
-%% EKF ERROR PLOTS
-error = EKF.predictions' - yy;
-figure('units','normalized','outerposition',[0 0 1 1])
+%% EKF ERROR PLOTS (This part was broken by transition to hybrid EKF, will fix later)
+% Length of x_all no longer equals yy, need to do some interpolation
 
-subplot(1, 2, 1);
-axis on; grid on; hold on;
-plot(TTplot, error(:, 1) .* 180 / pi, 'LineWidth', 2);
-title('EKF Position Error');
-xlabel('Time (s)');
-ylabel('Position Error (deg)');
-
-subplot(1, 2, 2);
-axis on; grid on; hold on;
-plot(TTplot, lowpass(error(:, 2), .5) .* 180 / pi, 'LineWidth', 2);
-title('EKF Velocity Error');
-xlabel('Time (s)');
-ylabel('Velocity Error (deg/s)');
-
-sgtitle("EKF Error", "FontSize", 18);
+% error = HEKF.x_all' - yy;
+% figure('units','normalized','outerposition',[0 0 1 1])
+% 
+% subplot(1, 2, 1);
+% axis on; grid on; hold on;
+% plot(HEKF.t_all, error(:, 1) .* 180 / pi, 'LineWidth', 2);
+% title('HEKF Position Error');
+% xlabel('Time (s)');
+% ylabel('Position Error (deg)');
+% 
+% subplot(1, 2, 2);
+% axis on; grid on; hold on;
+% plot(HEKF.t_all, error(:, 2) .* 180 / pi, 'LineWidth', 2);
+% title('HEKF Velocity Error');
+% xlabel('Time (s)');
+% ylabel('Velocity Error (deg/s)');
+% 
+% sgtitle("EKF Error", "FontSize", 18);
 
 
