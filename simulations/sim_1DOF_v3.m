@@ -28,9 +28,9 @@ slew_rate = 1e40; % V / s
     
 %% SIMULATION PARAMETERS
 
-dt = 1e-5; % modeling physics at this rate (seconds)
+dt = 1e-6; % modeling physics at this rate (seconds)
 Ts = 1/(3.2e3); % algorithms updating at this rate (seconds)
-duration = 6; % simulation duration (seconds)
+duration = 7; % simulation duration (seconds)
 
 initial_position = 0; % inital heading (radians)
 initial_velocity = 0; % initial angular velocity (radians / second)
@@ -50,26 +50,47 @@ ir_eps = 1e-1; % epsilon for detecting ir beacon
 g = 9.81; % m / s^2
 sys_temp = 25; % temperature in celsius
 % modeling the ADXL375 accelerometer 
-% www.analog.com/media/en/technical-documentation/data-sheets/ADXL375.pdf
-acc_pos_im = [0.75 0; 0.55 90; 0.75 180; 0.65 270];
-% location in polar coordinates, each row is a 
-% different sensor with radius and heading from center (distance in inches)
-acc_pos = [acc_pos_im(:, 1) .* 0.0254 acc_pos_im(:, 2)];
-acc_dir = [40 ; 40; 40; 40]; 
+% www.analog.com/media/en/technical-documentation/data-sheets/ADXL375.pdf 
+left_acc_pos_im = [-0.80; -0.95];
+right_acc_pos_im = [0.80; 0.95];
+
+left_acc_pos = left_acc_pos_im .* 0.0254;
+right_acc_pos = right_acc_pos_im .* 0.0254;
+
+left_acc_dir = [45; 45];
+right_acc_dir = [45; 45];
+
+[acc_pairs1, acc_pairs2] = meshgrid(1:numel(left_acc_pos), 1:numel(right_acc_pos));
+acc_pairs = [acc_pairs1(:) acc_pairs2(:)];
+acc_dists = right_acc_pos(acc_pairs(:, 2)) - left_acc_pos(acc_pairs(:, 1));
+
 % angle deviation CW of +y on acc from direction of 
 % tangential acceleration if robot rotating CCW
-acc_params = [];
-accs = cell(numel(acc_params), 1);
-for k=1:size(acc_pos, 1)
+left_acc_params = [];
+right_acc_params = [];
+left_accs = cell(numel(left_acc_pos), 1);
+right_accs = cell(numel(right_acc_pos), 1);
+for k=1:size(left_acc_pos, 1)
     if use_perfect_accs
-        acc_params = [acc_params ; getAccParams("perfect", 1)];        
+        left_acc_params = [left_acc_params ; getAccParams("perfect", 1)];        
     else
-        acc_params = [acc_params ; getAccParams("ADXL375", 1)];
+        left_acc_params = [left_acc_params ; getAccParams("ADXL375", 1)];
     end
 
-    accs{k, 1} = imuSensor("accel-mag", "SampleRate", 1/Ts, ...
+    left_accs{k, 1} = imuSensor("accel-mag", "SampleRate", 1/Ts, ...
         "Temperature", sys_temp, ...
-        "Accelerometer", acc_params(k));
+        "Accelerometer", left_acc_params(k));
+end
+for k=1:size(right_acc_pos, 1)
+    if use_perfect_accs
+        right_acc_params = [right_acc_params ; getAccParams("perfect", 1)];        
+    else
+        right_acc_params = [right_acc_params ; getAccParams("ADXL375", 1)];
+    end
+
+    right_accs{k, 1} = imuSensor("accel-mag", "SampleRate", 1/Ts, ...
+        "Temperature", sys_temp, ...
+        "Accelerometer", right_acc_params(k));
 end
 
 %% CALCULATE MAX ANGULAR ACCELERATION
@@ -99,14 +120,25 @@ uu = zeros(steps, 2); % all inputs (steps -> motor voltage (volts),
                       %              external resistive torque (volts))
 yy = zeros(steps, 2); % all states (steps -> angular position in rad, 
                       %                         angular velocity in rad/s)
-acc_true = zeros(size(acc_pos, 1), steps, 3);                      
-acc_data = zeros(size(acc_pos, 1), steps, 3);
+left_tang_accel_guess_hist = zeros(steps, numel(left_acc_pos));
+right_tang_accel_guess_hist = zeros(steps, numel(right_acc_pos));
+left_cent_accel_guess_hist = zeros(steps, numel(left_acc_pos));
+right_cent_accel_guess_hist = zeros(steps, numel(right_acc_pos));
+ang_accel_guess_hist = zeros(steps, size(acc_pairs, 1));
+left_acc_true = zeros(size(left_acc_pos, 1), steps, 3);                      
+right_acc_true = zeros(size(right_acc_pos, 1), steps, 3);                      
+left_acc_data = zeros(size(left_acc_pos, 1), steps, 3);
+right_acc_data = zeros(size(right_acc_pos, 1), steps, 3);
 yy_all = zeros(numel(tt).*(steps-1), 2); % yy but with like wayyy more                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  l = zeros(numel(tt).*(steps-1), 2); % yy but with like wayyy more
 uu(1, :) = u0;
 yy(1, :) = x0;
-for k=1:size(acc_pos, 1)
-    acc_true(k, 1, :) = [0 0 0];
-    acc_data(k, 1, :) = [0 0 0];
+for k=1:size(left_acc_pos, 1)
+    left_acc_true(k, 1, :) = [0 0 0];
+    left_acc_data(k, 1, :) = [0 0 0];
+end
+for k=1:size(right_acc_pos, 1)
+    right_acc_true(k, 1, :) = [0 0 0];
+    right_acc_data(k, 1, :) = [0 0 0];
 end
 
 %% EKF Setup
@@ -114,11 +146,12 @@ targ_angvel = 3000 / 60 * 2 * pi; % target angular velocity
 deltaVolt = 1e-1; % max change in volts every Ts
 maxVolt = 22; % max voltage we can input
 minVolt = -22; % min voltage we can input
-EKF = MeltyBrain_EKF(Ts, duration, alpha, beta, acc_pos(:, 1), 0.0254 .* r_wheel_im, 0.0254 .* r_robot_im, ...
-                     size(acc_pos, 1), 0, nan, nan, use_ir_beacons, ir_eps);
+EKF = MeltyBrain_EKF2(Ts, duration, alpha, beta, acc_dists, 0.0254 .* r_wheel_im, 0.0254 .* r_robot_im, ...
+                     size(acc_pairs, 1), 0, nan, nan, use_ir_beacons, ir_eps);
 %Constructor arguments:
-%MeltyBrain_EKF(dt, Tsim, alpha, beta, accRad, wheelRad, botRad...
-%imus, mags, maxBField, fieldOffset, beacon, beaconRange)
+% MeltyBrain_EKF2(dt, Tsim, alpha, beta, dists, ...
+%                 wheelRad, botRad, imus, mags, maxBField, ...
+%                 fieldOffset, beacon, beaconRange)
 
 %% SIMULATION EXECUTION 
 
@@ -126,7 +159,8 @@ for k=2:steps
     
     fprintf("%d/%d\n", k, steps);
     
-    % Update the physics 
+    % DYNAMICS UPDATE STEP
+    
     if k==2
         [yy(k, :), yy_all_temp] = step1DOFSVM(sysd, A, B, ...
             yy(k-1, :), uu(k-1, :), ...
@@ -136,47 +170,92 @@ for k=2:steps
             yy(k-1, :), uu(k-1, :), ...
             dt, Ts, slew_rate, uu(k-2, :));    
     end
+    
     yy_all( ((k-2)*numel(tt)+1) : ((k-1)*numel(tt)), : ) = yy_all_temp;
+    
+    
+    % GENERATE SENSOR DATA
+    
     ang_vel = yy_all_temp(:, 2); % extract fine angular velocity
     ang_accel = diff(ang_vel) ./ dt; % numerical angular acceleration
-    tang_accel = ang_accel * acc_pos(:, 1).'; % tangential acceleration at
-    % each sensor in m/s^2
-    tang_accel_read = tang_accel(end, :).'; % tangential acceleration read
-    % by the accelerometer
-    cent_accel = (ang_vel.^2) * acc_pos(:, 1).';
-    cent_accel_read = cent_accel(end, :).';
     
-    for kacc = 1:size(acc_pos, 1)
-        ay = tang_accel_read(kacc) .* cosd(acc_dir(kacc)) ...
-            - cent_accel_read(kacc) .* sind(acc_dir(kacc));
-        ax = -cent_accel_read(kacc) .* cosd(acc_dir(kacc)) ...
-            - tang_accel_read(kacc) .* sind(acc_dir(kacc));
-        acc_true(kacc, k, :) = [ax ay 0];
-        curr_acc = accs{kacc, 1};
-%         [acc_readings, ~] = curr_acc(squeeze(acc_true(kacc, 1:k, :)), ...
-%             [zeros(k, 2) yy(1:k, 2)]);
-%         acc_data(kacc, k, :) = acc_readings(end, :);
+    ang_vel_act = ang_vel(end);
+    ang_accel_act = ang_accel(end);
+    
+    left_tang_accel = ang_accel_act .* left_acc_pos(:, 1);
+    right_tang_accel = ang_accel_act .* right_acc_pos(:, 1); 
+    
+    left_cent_accel = (ang_vel_act.^2) * left_acc_pos(:, 1);
+    right_cent_accel = (ang_vel_act.^2) * right_acc_pos(:, 1);
+    
+    for kacc = 1:size(left_acc_pos, 1)
+        ay = left_tang_accel(kacc) .* cosd(left_acc_dir(kacc)) ...
+            + -left_cent_accel(kacc) .* sind(left_acc_dir(kacc));
+        ax = -left_cent_accel(kacc) .* cosd(left_acc_dir(kacc)) ...
+            + -left_tang_accel(kacc) .* sind(left_acc_dir(kacc));
+        left_acc_true(kacc, k, :) = [ax ay 0];
+        curr_acc = left_accs{kacc, 1};
         [acc_readings, ~] = curr_acc( ...
-            reshape(acc_true(kacc, k, :), [1 3]), ...
+            reshape(left_acc_true(kacc, k, :), [1 3]), ...
             [0 0 0]);
-        acc_data(kacc, k, :) = acc_readings;
-        acc_true(kacc, k, 3) = -g; % for plotting
+        left_acc_data(kacc, k, :) = acc_readings;
+        left_acc_true(kacc, k, 3) = -g;
     end
     
-    %Update the Kalman Filter with the accelerometer reading and commanded
-    %voltage
-    % precalculate the centripetal and tangential acceleration 
-    % from the measured data first
-    % a_c = -a_x*cos(theta) + -a_y*sin(theta)
-    cent_accel_guess = ...
-        -reshape(acc_data(:, k, 1), [numel(acc_dir) 1]) .* cosd(acc_dir) ...
-        + -reshape(acc_data(:, k, 2), [numel(acc_dir) 1]) .* sind(acc_dir); 
-    % a_t = -a_x*sin(theta) + a_y*cos(theta) 
-    tang_accel_guess = ...
-        -reshape(acc_data(:, k, 1), [numel(acc_dir) 1]) .* sind(acc_dir) ...
-        + reshape(acc_data(:, k, 2), [numel(acc_dir) 1]) .* cosd(acc_dir);
-    % Assemble measurement vector
-    meas = abs(cent_accel_guess);
+    for kacc = 1:size(right_acc_pos, 1)
+        ay = right_tang_accel(kacc) .* cosd(right_acc_dir(kacc)) ...
+            + -right_cent_accel(kacc) .* sind(right_acc_dir(kacc));
+        ax = -right_cent_accel(kacc) .* cosd(right_acc_dir(kacc)) ...
+            + -right_tang_accel(kacc) .* sind(right_acc_dir(kacc));
+        right_acc_true(kacc, k, :) = [ax ay 0];
+        curr_acc = right_accs{kacc, 1};
+        [acc_readings, ~] = curr_acc( ...
+            reshape(right_acc_true(kacc, k, :), [1 3]), ...
+            [0 0 0]);
+        right_acc_data(kacc, k, :) = acc_readings;
+        right_acc_true(kacc, k, 3) = -g;
+    end
+    
+    % ALGORITHM EVALUATION
+    
+    left_cent_accel_guess = ...
+        -reshape(left_acc_data(:, k, 1), [numel(left_acc_dir) 1]) ...
+            .* cosd(left_acc_dir) ...
+        + -reshape(left_acc_data(:, k, 2), [numel(left_acc_dir) 1]) ...
+            .* sind(left_acc_dir);
+    left_cent_accel_guess_hist(k, :) = left_cent_accel_guess;
+    
+    right_cent_accel_guess = ...
+        -reshape(right_acc_data(:, k, 1), [numel(right_acc_dir) 1]) ...
+            .* cosd(right_acc_dir) ...
+        + -reshape(right_acc_data(:, k, 2), [numel(right_acc_dir) 1]) ...
+            .* sind(right_acc_dir);
+    right_cent_accel_guess_hist(k, :) = right_cent_accel_guess;
+    
+    left_tang_accel_guess = ...
+        -reshape(left_acc_data(:, k, 1), [numel(left_acc_dir) 1]) ...
+            .* sind(left_acc_dir) ...
+        + reshape(left_acc_data(:, k, 2), [numel(left_acc_dir) 1]) ...
+            .* cosd(left_acc_dir);
+    left_tang_accel_guess_hist(k, :) = left_tang_accel_guess;
+    
+    right_tang_accel_guess = ...
+        -reshape(right_acc_data(:, k, 1), [numel(right_acc_dir) 1]) ...
+            .* sind(right_acc_dir) ...
+        + reshape(right_acc_data(:, k, 2), [numel(right_acc_dir) 1]) ...
+            .* cosd(right_acc_dir);    
+    right_tang_accel_guess_hist(k, :) = right_tang_accel_guess;
+    
+    ang_accel_guess = ( right_tang_accel_guess(acc_pairs(:, 2)) ...
+        - left_tang_accel_guess(acc_pairs(:, 1)) ) ...
+        ./ acc_dists;
+    ang_accel_guess_hist(k, :) = ang_accel_guess;
+    
+    cent_acc_diffs = abs( right_cent_accel_guess(acc_pairs(:, 2)) ...
+        - left_cent_accel_guess(acc_pairs(:, 1)) );
+    
+    meas = cent_acc_diffs;
+    
     if(EKF.mags > 0)
         %TODO: Add magnetometer readigns
     end
@@ -188,9 +267,7 @@ for k=2:steps
     pred = EKF.update(meas, uu(k-1, 1));
     
     % Algo
-    if TT(k-1) < 0.5
-        uu(k, :) = [0 0];
-    elseif pred(2) > targ_angvel
+    if pred(2) > targ_angvel
         uu(k, :) = [uu(k-1, 1) - deltaVolt 0];
         if uu(k, 1) < minVolt
             uu(k, 1) = minVolt;
@@ -265,19 +342,19 @@ sgtitle(sprintf(['Robot Dynamic Modeling: Kv=%.2e, D=%.3f, R=%.3f, ', ...
     "FontSize", 18);
 
 
-%% SENSOR READING PLOTS
+%% LEFT ACCELEROMETER READING PLOTS
 
 figure('units','normalized','outerposition',[0 0 1 1])
-Nacc = size(acc_pos, 1);
+Nacc = numel(left_acc_pos);
 
 for k=1:Nacc
     
     subplot(2*Nacc, 3, 6*k-5);
     axis on; grid on;
-    plot(TTplot, -reshape(acc_true(k, :, 1), [numel(TTplot) 1]), ...
+    plot(TTplot, -reshape(left_acc_true(k, :, 1), [numel(TTplot) 1]), ...
         '-', "LineWidth", 2);
     hold on
-    plot(TTplot, reshape(acc_data(k, :, 1), [numel(TTplot) 1]), ...
+    plot(TTplot, reshape(left_acc_data(k, :, 1), [numel(TTplot) 1]), ...
         '--', "LineWidth", 2);
     hold off
     xlabel("Time (s)");
@@ -286,10 +363,10 @@ for k=1:Nacc
     
     subplot(2*Nacc, 3, 6*k-4);
     axis on; grid on;
-    plot(TTplot, -reshape(acc_true(k, :, 2), [numel(TTplot) 1]), ...
+    plot(TTplot, -reshape(left_acc_true(k, :, 2), [numel(TTplot) 1]), ...
         '-', "LineWidth", 2);
     hold on
-    plot(TTplot, reshape(acc_data(k, :, 2), [numel(TTplot) 1]), ...
+    plot(TTplot, reshape(left_acc_data(k, :, 2), [numel(TTplot) 1]), ...
         '--', "LineWidth", 2);
     hold off
     xlabel("Time (s)");
@@ -298,10 +375,10 @@ for k=1:Nacc
     
     subplot(2*Nacc, 3, 6*k-3);
     axis on; grid on;
-    plot(TTplot, -reshape(acc_true(k, :, 3), [numel(TTplot) 1]), ...
+    plot(TTplot, -reshape(left_acc_true(k, :, 3), [numel(TTplot) 1]), ...
         '-', "LineWidth", 2);
     hold on
-    plot(TTplot, reshape(acc_data(k, :, 3), [numel(TTplot) 1]), ...
+    plot(TTplot, reshape(left_acc_data(k, :, 3), [numel(TTplot) 1]), ...
         '--', "LineWidth", 2);
     hold off
     xlabel("Time (s)");
@@ -311,13 +388,13 @@ for k=1:Nacc
     subplot(2*Nacc, 3, 6*k-2);
     axis on; grid on;
     plot(TTplot, ...
-        reshape(acc_data(k, :, 1), [numel(TTplot) 1]) + ...
-        reshape(acc_true(k, :, 1), [numel(TTplot) 1]), '-', ...
+        reshape(left_acc_data(k, :, 1), [numel(TTplot) 1]) + ...
+        reshape(left_acc_true(k, :, 1), [numel(TTplot) 1]), '-', ...
         "LineWidth", 2);
     hold on
     plot(TTplot, ...
-        abs(reshape(acc_data(k, :, 1), [numel(TTplot) 1]) + ...
-        reshape(acc_true(k, :, 1), [numel(TTplot) 1])), '--', ...
+        abs(reshape(left_acc_data(k, :, 1), [numel(TTplot) 1]) + ...
+        reshape(left_acc_true(k, :, 1), [numel(TTplot) 1])), '--', ...
         "LineWidth", 2);
     hold off
     xlabel("Time (s)");
@@ -327,13 +404,13 @@ for k=1:Nacc
     subplot(2*Nacc, 3, 6*k-1);
     axis on; grid on;
     plot(TTplot, ...
-        reshape(acc_data(k, :, 2), [numel(TTplot) 1]) + ...
-        reshape(acc_true(k, :, 2), [numel(TTplot) 1]), '-', ...
+        reshape(left_acc_data(k, :, 2), [numel(TTplot) 1]) + ...
+        reshape(left_acc_true(k, :, 2), [numel(TTplot) 1]), '-', ...
         "LineWidth", 2);
     hold on
     plot(TTplot, ...
-        abs(reshape(acc_data(k, :, 2), [numel(TTplot) 1]) + ...
-        reshape(acc_true(k, :, 2), [numel(TTplot) 1])), '--', ...
+        abs(reshape(left_acc_data(k, :, 2), [numel(TTplot) 1]) + ...
+        reshape(left_acc_true(k, :, 2), [numel(TTplot) 1])), '--', ...
         "LineWidth", 2);
     hold off
     xlabel("Time (s)");
@@ -343,13 +420,13 @@ for k=1:Nacc
     subplot(2*Nacc, 3, 6*k);
     axis on; grid on;
     plot(TTplot, ...
-        reshape(acc_data(k, :, 3), [numel(TTplot) 1]) + ...
-        reshape(acc_true(k, :, 3), [numel(TTplot) 1]), '-', ...
+        reshape(left_acc_data(k, :, 3), [numel(TTplot) 1]) + ...
+        reshape(left_acc_true(k, :, 3), [numel(TTplot) 1]), '-', ...
         "LineWidth", 2);
     hold on
     plot(TTplot, ...
-        abs(reshape(acc_data(k, :, 3), [numel(TTplot) 1]) + ...
-        reshape(acc_true(k, :, 3), [numel(TTplot) 1])), '--', ...
+        abs(reshape(left_acc_data(k, :, 3), [numel(TTplot) 1]) + ...
+        reshape(left_acc_true(k, :, 3), [numel(TTplot) 1])), '--', ...
         "LineWidth", 2);
     hold off
     xlabel("Time (s)");
@@ -358,7 +435,103 @@ for k=1:Nacc
    
 end
 
-sgtitle("Accelerometers", "FontSize", 18);
+sgtitle("Left-Side Accelerometers", "FontSize", 18);
+
+%% LEFT ACCELEROMETER READING PLOTS
+
+figure('units','normalized','outerposition',[0 0 1 1])
+Nacc = numel(right_acc_pos);
+
+for k=1:Nacc
+    
+    subplot(2*Nacc, 3, 6*k-5);
+    axis on; grid on;
+    plot(TTplot, -reshape(right_acc_true(k, :, 1), [numel(TTplot) 1]), ...
+        '-', "LineWidth", 2);
+    hold on
+    plot(TTplot, reshape(right_acc_data(k, :, 1), [numel(TTplot) 1]), ...
+        '--', "LineWidth", 2);
+    hold off
+    xlabel("Time (s)");
+    ylabel(sprintf("Acc #%d +X (m/s^2)", k));
+    legend("True", "Measured");
+    
+    subplot(2*Nacc, 3, 6*k-4);
+    axis on; grid on;
+    plot(TTplot, -reshape(right_acc_true(k, :, 2), [numel(TTplot) 1]), ...
+        '-', "LineWidth", 2);
+    hold on
+    plot(TTplot, reshape(right_acc_data(k, :, 2), [numel(TTplot) 1]), ...
+        '--', "LineWidth", 2);
+    hold off
+    xlabel("Time (s)");
+    ylabel(sprintf("Acc #%d +Y (m/s^2)", k));
+    legend("True", "Measured");
+    
+    subplot(2*Nacc, 3, 6*k-3);
+    axis on; grid on;
+    plot(TTplot, -reshape(right_acc_true(k, :, 3), [numel(TTplot) 1]), ...
+        '-', "LineWidth", 2);
+    hold on
+    plot(TTplot, reshape(right_acc_data(k, :, 3), [numel(TTplot) 1]), ...
+        '--', "LineWidth", 2);
+    hold off
+    xlabel("Time (s)");
+    ylabel(sprintf("Acc #%d +Z (m/s^2)", k));
+    legend("True", "Measured");
+    
+    subplot(2*Nacc, 3, 6*k-2);
+    axis on; grid on;
+    plot(TTplot, ...
+        reshape(right_acc_data(k, :, 1), [numel(TTplot) 1]) + ...
+        reshape(right_acc_true(k, :, 1), [numel(TTplot) 1]), '-', ...
+        "LineWidth", 2);
+    hold on
+    plot(TTplot, ...
+        abs(reshape(right_acc_data(k, :, 1), [numel(TTplot) 1]) + ...
+        reshape(right_acc_true(k, :, 1), [numel(TTplot) 1])), '--', ...
+        "LineWidth", 2);
+    hold off
+    xlabel("Time (s)");
+    ylabel(sprintf("Acc Error #%d +X (m/s^2)", k));
+    legend("Directional", "Absolute");
+    
+    subplot(2*Nacc, 3, 6*k-1);
+    axis on; grid on;
+    plot(TTplot, ...
+        reshape(right_acc_data(k, :, 2), [numel(TTplot) 1]) + ...
+        reshape(right_acc_true(k, :, 2), [numel(TTplot) 1]), '-', ...
+        "LineWidth", 2);
+    hold on
+    plot(TTplot, ...
+        abs(reshape(right_acc_data(k, :, 2), [numel(TTplot) 1]) + ...
+        reshape(right_acc_true(k, :, 2), [numel(TTplot) 1])), '--', ...
+        "LineWidth", 2);
+    hold off
+    xlabel("Time (s)");
+    ylabel(sprintf("Acc Error #%d +Y (m/s^2)", k));
+    legend("Directional", "Absolute");
+    
+    subplot(2*Nacc, 3, 6*k);
+    axis on; grid on;
+    plot(TTplot, ...
+        reshape(right_acc_data(k, :, 3), [numel(TTplot) 1]) + ...
+        reshape(right_acc_true(k, :, 3), [numel(TTplot) 1]), '-', ...
+        "LineWidth", 2);
+    hold on
+    plot(TTplot, ...
+        abs(reshape(right_acc_data(k, :, 3), [numel(TTplot) 1]) + ...
+        reshape(right_acc_true(k, :, 3), [numel(TTplot) 1])), '--', ...
+        "LineWidth", 2);
+    hold off
+    xlabel("Time (s)");
+    ylabel(sprintf("Acc Error #%d +Z (m/s^2)", k));
+    legend("Directional", "Absolute");
+   
+end
+
+sgtitle("Left-Side Accelerometers", "FontSize", 18);
+
 
 %% EKF ERROR PLOTS
 error = EKF.predictions' - yy;

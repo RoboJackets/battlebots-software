@@ -1,4 +1,4 @@
-classdef MeltyBrain_EKF < handle
+classdef MeltyBrain_EKF2 < handle
     properties
         dt %Time step
         A %Motion matrix
@@ -54,8 +54,9 @@ classdef MeltyBrain_EKF < handle
             beacon: whether or not to utilize an IR beacon
             beaconRange: range of angle in which beacon outputs a value
         %}
-        function obj = MeltyBrain_EKF(dt, Tsim, alpha, beta, accRad, wheelRad, botRad, ...
-        imus, mags, maxBField, fieldOffset, beacon, beaconRange)
+        function obj = MeltyBrain_EKF2(dt, Tsim, alpha, beta, dists, ...
+                wheelRad, botRad, imus, mags, maxBField, ...
+                fieldOffset, beacon, beaconRange)
             obj.dt = dt;
             %Define discrete time dynamics
             obj.A = [1 dt - 0.5 * alpha * dt ^ 2;
@@ -70,11 +71,11 @@ classdef MeltyBrain_EKF < handle
             %-angle = 2 * pi - angle
             beaconEdges = [beaconRange 2 * pi - beaconRange];
             %Define Jacobian
-            obj.H = @(theta, omega) [zeros(imus, 1) 2.*accRad.*omega; ...
+            obj.H = @(theta, omega) [zeros(imus, 1) 2.*dists.*omega; ...
                                      repmat([-maxBField * sin(theta - fieldOffset) 0], mags, 1); ... 
                                      repmat(obj.evalIRJacobian(theta, beaconRange), beacon, 1)];
             %Define state to observation transformation matrix
-            obj.h = @(theta, omega) [accRad .* (omega.^2); ...
+            obj.h = @(theta, omega) [dists .* (omega.^2); ...
                                      repmat([maxBField * cos(theta - fieldOffset)], mags, 1); ...
                                      repmat((mod(theta, 2 * pi) < beaconEdges(1) | mod(theta, 2 * pi) > beaconEdges(2)), beacon, 1)];
             %Initial state and covariances at 0
