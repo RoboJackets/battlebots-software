@@ -38,7 +38,7 @@ initial_voltage = 0; % initial motor voltage (volts fuck u think)
 initial_extrestorque = 0; % initial external resistive torque (volts)
 
 use_perfect_accs = false;
-use_ir_beacons = true;
+use_ir_beacons = false;
 
 
 %% SENSOR PARAMETERS
@@ -99,6 +99,7 @@ uu = zeros(steps, 2); % all inputs (steps -> motor voltage (volts),
                       %              external resistive torque (volts))
 yy = zeros(steps, 2); % all states (steps -> angular position in rad, 
                       %                         angular velocity in rad/s)
+pred_hist = zeros(steps, 2);
 acc_true = zeros(size(acc_pos, 1), steps, 3);                      
 acc_data = zeros(size(acc_pos, 1), steps, 3);
 yy_all = zeros(numel(tt).*(steps-1), 2); % yy but with like wayyy more                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  l = zeros(numel(tt).*(steps-1), 2); % yy but with like wayyy more
@@ -186,6 +187,8 @@ for k=2:steps
     if(use_ir_beacons && inRange)
         pred = HEKF.update(0, uu(k - 1, 1), k * Ts, 'beacon');
     end
+    
+    pred_hist(k, :) = pred;
     
     % Velocity limiting algorithm
     if pred(2) > targ_angvel
@@ -359,22 +362,24 @@ sgtitle("Accelerometers", "FontSize", 18);
 % Length of x_all no longer equals yy, need to do some interpolation
 
 % error = HEKF.x_all' - yy;
-% figure('units','normalized','outerposition',[0 0 1 1])
-% 
-% subplot(1, 2, 1);
-% axis on; grid on; hold on;
-% plot(HEKF.t_all, error(:, 1) .* 180 / pi, 'LineWidth', 2);
-% title('HEKF Position Error');
-% xlabel('Time (s)');
-% ylabel('Position Error (deg)');
-% 
-% subplot(1, 2, 2);
-% axis on; grid on; hold on;
-% plot(HEKF.t_all, error(:, 2) .* 180 / pi, 'LineWidth', 2);
-% title('HEKF Velocity Error');
-% xlabel('Time (s)');
-% ylabel('Velocity Error (deg/s)');
-% 
-% sgtitle("EKF Error", "FontSize", 18);
+error = pred_hist - [wrapToPi(yy(:, 1)) yy(:, 2)];
+error = [wrapToPi(error(:, 1)) error(:, 2)];
+figure('units','normalized','outerposition',[0 0 1 1])
+
+subplot(1, 2, 1);
+axis on; grid on; hold on;
+plot(TTplot, error(:, 1) .* 180 / pi, 'LineWidth', 2);
+title('HEKF Position Error');
+xlabel('Time (s)');
+ylabel('Position Error (deg)');
+
+subplot(1, 2, 2);
+axis on; grid on; hold on;
+plot(TTplot, lowpass(error(:, 2) .* 180 / pi, 0.5), 'LineWidth', 2);
+title('HEKF Velocity Error');
+xlabel('Time (s)');
+ylabel('Velocity Error (deg/s)');
+
+sgtitle("HEKF Error", "FontSize", 18);
 
 
