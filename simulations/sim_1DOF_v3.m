@@ -28,7 +28,7 @@ slew_rate = 1e40; % V / s
     
 %% SIMULATION PARAMETERS
 
-dt = 1e-5; % modeling physics at this rate (seconds)
+dt = 1e-6; % modeling physics at this rate (seconds)
 Ts = 1/(3.2e3); % algorithms updating at this rate (seconds)
 duration = 6; % simulation duration (seconds)
 
@@ -38,7 +38,7 @@ initial_voltage = 0; % initial motor voltage (volts fuck u think)
 initial_extrestorque = 0; % initial external resistive torque (volts)
 
 use_perfect_accs = false;
-use_ir_beacons = true;
+use_ir_beacons = false;
 
 
 %% SENSOR PARAMETERS
@@ -51,9 +51,9 @@ g = 9.81; % m / s^2
 sys_temp = 25; % temperature in celsius
 % modeling the ADXL375 accelerometer 
 % www.analog.com/media/en/technical-documentation/data-sheets/ADXL375.pdf 
-left_acc_pos_im = [-0.75; -0.50];
+left_acc_pos_im = [-0.73; -0.60];
 left_acc_pos_im = sort(left_acc_pos_im, 'ascend');
-right_acc_pos_im = [0.50; 0.75];
+right_acc_pos_im = [0.60; 0.73];
 right_acc_pos_im = sort(right_acc_pos_im, 'ascend');
 
 
@@ -153,7 +153,7 @@ left_acc_data = zeros(size(left_acc_pos, 1), steps, 3);
 right_acc_data = zeros(size(right_acc_pos, 1), steps, 3);
 all_acc_data = zeros(numel(all_acc_pos), steps, 3);
 
-pred_hist = zeros(steps, 2);
+pred_hist = zeros(steps, 2+size(acc_pairs, 1));
 yy_all = zeros(numel(tt).*(steps-1), 2); % yy but with like wayyy more                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  l = zeros(numel(tt).*(steps-1), 2); % yy but with like wayyy more
 uu(1, :) = u0;
 yy(1, :) = x0;
@@ -178,8 +178,8 @@ minVolt = -22; % min voltage we can input
 % MeltyBrain_EKF2(dt, Tsim, alpha, beta, dists, ...
 %                 wheelRad, botRad, imus, mags, maxBField, ...
 %                 fieldOffset, beacon, beaconRange)
-HEKF = MeltyBrain_HEKF2(dt, alpha, beta, all_acc_dists, ...
-    0.0254 .* r_wheel_im, 0.0254 .* r_robot_im, size(all_acc_pairs, 1));
+HEKF = MeltyBrain_HEKF2(dt, alpha, beta, acc_dists, ...
+    0.0254 .* r_wheel_im, 0.0254 .* r_robot_im, size(acc_pairs, 1));
 
 
 
@@ -311,8 +311,8 @@ for k=2:steps
     all_cent_acc_diffs = abs( all_cent_accel_guess(all_acc_pairs(:, 2)) ...
         - all_cent_accel_guess(all_acc_pairs(:, 1)) );
     
-%     meas = cent_acc_diffs;
-    meas = all_cent_acc_diffs;
+    meas = cent_acc_diffs;
+%     meas = all_cent_acc_diffs;
     
     pred = HEKF.update(meas, uu(k-1, 1), k*Ts, 'acc');
     
@@ -327,6 +327,7 @@ for k=2:steps
     end
     
     pred_hist(k, :) = pred;
+    pred = pred(1:2);
     
     % Algo
     if pred(2) > targ_angvel
@@ -593,7 +594,7 @@ sgtitle("Right-Side Accelerometers", "FontSize", 18);
 
 
 %% EKF ERROR PLOTS
-error = pred_hist - [wrapToPi(yy(:, 1)) yy(:, 2)];
+error = pred_hist(:, 1:2) - [wrapToPi(yy(:, 1)) yy(:, 2)];
 error = [wrapToPi(error(:, 1)) error(:, 2)];
 figure('units','normalized','outerposition',[0 0 1 1])
 

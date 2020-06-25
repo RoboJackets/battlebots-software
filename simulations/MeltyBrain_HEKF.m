@@ -7,7 +7,7 @@
     Unless otherwise stated, all angle variables, constants, inputs, 
     outputs are in RADIANS
 %}
-classdef MeltyBrain_HEKF2 < handle
+classdef MeltyBrain_HEKF < handle
     %% Class Properties
     properties
         dt      %Continuous time simulation timestep
@@ -66,44 +66,38 @@ classdef MeltyBrain_HEKF2 < handle
             botR: radius of robot
             imus: number of imus used
         %}
-        function [obj] = MeltyBrain_HEKF2(dt, alpha, beta, dists, wheelR, botR, imus)
+        function [obj] = MeltyBrain_HEKF(dt, alpha, beta, accR, wheelR, botR, imus)
             obj.dt = dt;        %Set time step
             obj.tUpdate = 0;    %First update is at t = 0
             obj.updates = 0;    %No updates to start
 
-            obj.A = [0 1 zeros(1, imus);           %Define motion matrix
-                     0 -alpha zeros(1, imus);
-                     zeros(imus, 2+imus)];
+            obj.A = [0 1;           %Define motion matrix
+                     0 -alpha];
             obj.B = [0;             %Define input matrix
-                     wheelR * beta / botR;
-                     zeros(imus, 1)];
+                     wheelR * beta / botR];
             %Cell array of state to observation matricies for each sensor
             %h{1} corresponds to accelerometers (a = w^2 * r)
             %h{2} corresponds to beacon (theta = theta)
-            obj.h = {@(x) x(3:end, :) .* x(2) .^ 2 .* dists, ...    
+            obj.h = {@(x) repmat(x(2) ^ 2 * accR, imus, 1), ...    
                 	 @(x) mod(x(1), 2 * pi)};
             %Cell array of state to observation jacobians for each sensor
             %H{1} corresponds to accelerometers
             %H{2} corresponds to beacon
-            obj.H = {@(x) [zeros(imus, 1) ...
-                            2.*x(3:end).*x(2).*dists ...
-                            (x(2).^2).*diag(dists)], ...
-                     @(x) [1 0 zeros(1, imus)]};
+            obj.H = {@(x) repmat([0 2 * x(2) * accR], imus, 1), ...
+                     @(x) [1 0]};
 
-            obj.x = [0; 0; ones(imus, 1)];     %Init position = init velocity = 0
-            obj.x_all = [0; 0; ones(imus, 1)]; %Initial predictions vector
+            obj.x = [0; 0];     %Init position = init velocity = 0
+            obj.x_all = [0; 0]; %Initial predictions vector
             obj.t_all = 0;      %Initial times vector (need to store time since Ts not const.)
             
-            angleVar = 1e-1;     %Variance of the initial angle
-            processVar = 0.7e-1;   %Variance of the model
-            imuVar = 2e1;        %Variance of imus
-            compVar = 4e0;       % variance of compensation weights
-            beaconVar = 1e-2;    %Variance of beacon
+            angleVar = 0.1;     %Variance of the initial angle
+            processVar = 0.1;   %Variance of the model
+            imuVar = 80;        %Variance of imus
+            beaconVar = .01;    %Variance of beacon
             
-            obj.P = [angleVar 0 zeros(1, imus);            %Initial state covariance
-                     0 0 zeros(1, imus); 
-                     zeros(imus, 2) compVar.*eye(imus)];                  %Velocity variance is 0 since w is guarunteed to be 0
-            obj.Q = processVar .* eye(2+imus);   %Process covariance matrix
+            obj.P = [angleVar 0;            %Initial state covariance
+                     0 0];                  %Velocity variance is 0 since w is guarunteed to be 0
+            obj.Q = processVar .* eye(2);   %Process covariance matrix
             %Cell array of sensor noise covariances for each sensor
             %R{1} corresponds to accelerometers
             %R{2} corresponds to beacon
@@ -150,13 +144,12 @@ classdef MeltyBrain_HEKF2 < handle
             hk = obj.h{sensorIdx}(obj.x);   %Evaluate expected measurement of state estimate
             Rk = obj.R{sensorIdx};          %Select corresponding sensor noise covariance
             K = obj.P * Hk' / (Hk * obj.P * Hk' + Rk);
-            err = meas - hk;                %Error between expected and actual measurements            
-            
+            err = meas - hk;                %Error between expected and actual measurements
             if(sensorIdx == 2)              %If using the beacon, measurement error needs to be
                 err = wrapToPi(err);        %Constrained to the range [-pi, pi)
             end
             obj.x = obj.x + K * (err);
-            obj.P = (eye(2+obj.imus) - K * Hk) * obj.P * (eye(2+obj.imus) - K * Hk)' + K * Rk * K';
+            obj.P = (eye(2) - K * Hk) * obj.P * (eye(2) - K * Hk)' + K * Rk * K';
             
             %Update values
             obj.x(1) = wrapToPi(obj.x(1));      %Constrain angular position to [-pi, pi)
