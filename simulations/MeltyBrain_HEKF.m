@@ -93,7 +93,7 @@ classdef MeltyBrain_HEKF < handle
             angleVar = 0.1;     %Variance of the initial angle
             processVar = 0.1;   %Variance of the model
             imuVar = 80;        %Variance of imus
-            beaconVar = .01;    %Variance of beacon
+            beaconVar = .001;    %Variance of beacon
             
             obj.P = [angleVar 0;            %Initial state covariance
                      0 0];                  %Velocity variance is 0 since w is guarunteed to be 0

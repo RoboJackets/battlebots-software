@@ -30,7 +30,7 @@ slew_rate = 1e40; % V / s
 
 dt = 1e-5; % modeling physics at this rate (seconds)
 Ts = 1/(3.2e3); % algorithms updating at this rate (seconds)
-duration = 8; % simulation duration (seconds)
+duration = 6; % simulation duration (seconds)
 
 initial_position = 0; % inital heading (radians)
 initial_velocity = 0; % initial angular velocity (radians / second)
@@ -187,8 +187,11 @@ for k=2:steps
     pred = HEKF.update(meas, uu(k - 1, 1), k * Ts, 'acc');
     
     % Assemble beacon measurements
+    if(k == 2)
+        prevAngle = 0;      %Angle in the previous controller step
+    end
     angle = wrapToPi(yy(k - 1, 1)) * 180 / pi;
-    inRange = (angle < 1 && angle > -1);
+    inRange = prevAngle < 0 && angle > 0;
     if(use_ir_beacons && inRange)
         pred = HEKF.update(0, uu(k - 1, 1), k * Ts, 'beacon');
     end
@@ -197,7 +200,7 @@ for k=2:steps
     if(use_ir_beacons && inRange && rand() < reflectionChance)
         pred = HEKF.update(0, uu(k - 1, 1), k * Ts, 'beacon');
     end
-    
+    prevAngle = angle;
     
     pred_hist(k, :) = pred;
     
