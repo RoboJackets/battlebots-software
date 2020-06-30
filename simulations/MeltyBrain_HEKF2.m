@@ -71,39 +71,42 @@ classdef MeltyBrain_HEKF2 < handle
             obj.tUpdate = 0;    %First update is at t = 0
             obj.updates = 0;    %No updates to start
 
-            obj.A = [0 1 zeros(1, imus);           %Define motion matrix
-                     0 -alpha zeros(1, imus);
-                     zeros(imus, 2+imus)];
+            obj.A = [0 1 zeros(1, 2*imus);           %Define motion matrix
+                     0 -alpha zeros(1, 2*imus);
+                     zeros(2*imus, 2+2*imus)];
             obj.B = [0;             %Define input matrix
                      wheelR * beta / botR;
-                     zeros(imus, 1)];
+                     zeros(2*imus, 1)];
             %Cell array of state to observation matricies for each sensor
             %h{1} corresponds to accelerometers (a = w^2 * r)
             %h{2} corresponds to beacon (theta = theta)
-            obj.h = {@(x) x(3:end, :) .* x(2) .^ 2 .* dists, ...    
+            obj.h = {@(x) x(3:3+imus-1, :) .* x(2) .^ 2 .* dists + x(3+imus:end), ...    
                 	 @(x) mod(x(1), 2 * pi)};
             %Cell array of state to observation jacobians for each sensor
             %H{1} corresponds to accelerometers
             %H{2} corresponds to beacon
             obj.H = {@(x) [zeros(imus, 1) ...
-                            2.*x(3:end).*x(2).*dists ...
-                            (x(2).^2).*diag(dists)], ...
+                            2.*x(3:3+imus-1).*x(2).*dists ...
+                            (x(2).^2).*diag(dists) ...
+                            eye(imus)], ...
                      @(x) [1 0 zeros(1, imus)]};
 
-            obj.x = [0; 0; ones(imus, 1)];     %Init position = init velocity = 0
-            obj.x_all = [0; 0; ones(imus, 1)]; %Initial predictions vector
+            obj.x = [0; 0; ones(imus, 1); zeros(imus, 1)];     %Init position = init velocity = 0
+            obj.x_all = [0; 0; ones(imus, 1); zeros(imus, 1)]; %Initial predictions vector
             obj.t_all = 0;      %Initial times vector (need to store time since Ts not const.)
             
             angleVar = 1e-1;     %Variance of the initial angle
-            processVar = 0.7e-1;   %Variance of the model
-            imuVar = 2e1;        %Variance of imus
+            processVar = 1e-1;   %Variance of the model
+            imuVar = 4e0;        %Variance of imus
             compVar = 4e0;       % variance of compensation weights
+            offsetVar = 7e0;        % variance of offsets 
             beaconVar = 1e-2;    %Variance of beacon
             
-            obj.P = [angleVar 0 zeros(1, imus);            %Initial state covariance
-                     0 0 zeros(1, imus); 
-                     zeros(imus, 2) compVar.*eye(imus)];                  %Velocity variance is 0 since w is guarunteed to be 0
-            obj.Q = processVar .* eye(2+imus);   %Process covariance matrix
+            obj.P = [angleVar 0 zeros(1, 2*imus);            %Initial state covariance
+                     0 0 zeros(1, 2*imus); 
+                     zeros(imus, 2) compVar.*eye(imus) zeros(imus);
+                     zeros(imus, imus+2) offsetVar.*eye(imus)];                  %Velocity variance is 0 since w is guarunteed to be 0
+            obj.Q = processVar .* eye(2+2*imus);   %Process covariance matrix
             %Cell array of sensor noise covariances for each sensor
             %R{1} corresponds to accelerometers
             %R{2} corresponds to beacon
@@ -156,7 +159,7 @@ classdef MeltyBrain_HEKF2 < handle
                 err = wrapToPi(err);        %Constrained to the range [-pi, pi)
             end
             obj.x = obj.x + K * (err);
-            obj.P = (eye(2+obj.imus) - K * Hk) * obj.P * (eye(2+obj.imus) - K * Hk)' + K * Rk * K';
+            obj.P = (eye(2+2*obj.imus) - K * Hk) * obj.P * (eye(2+2*obj.imus) - K * Hk)' + K * Rk * K';
             
             %Update values
             obj.x(1) = wrapToPi(obj.x(1));      %Constrain angular position to [-pi, pi)
