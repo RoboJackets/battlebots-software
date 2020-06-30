@@ -66,7 +66,7 @@ classdef MeltyBrain_HEKF < handle
             botR: radius of robot
             imus: number of imus used
         %}
-        function [obj] = MeltyBrain_HEKF(dt, alpha, beta, accR, wheelR, botR, imus)
+        function [obj] = MeltyBrain_HEKF(dt, alpha, beta, accDists, wheelR, botR, imus)
             obj.dt = dt;        %Set time step
             obj.tUpdate = 0;    %First update is at t = 0
             obj.updates = 0;    %No updates to start
@@ -78,12 +78,12 @@ classdef MeltyBrain_HEKF < handle
             %Cell array of state to observation matricies for each sensor
             %h{1} corresponds to accelerometers (a = w^2 * r)
             %h{2} corresponds to beacon (theta = theta)
-            obj.h = {@(x) repmat(x(2) ^ 2 * accR, imus, 1), ...    
+            obj.h = {@(x) x(2) ^ 2 .* accDists, ...    
                 	 @(x) mod(x(1), 2 * pi)};
             %Cell array of state to observation jacobians for each sensor
             %H{1} corresponds to accelerometers
             %H{2} corresponds to beacon
-            obj.H = {@(x) repmat([0 2 * x(2) * accR], imus, 1), ...
+            obj.H = {@(x) [zeros(imus, 1) 2 * x(2) .* accDists], ...
                      @(x) [1 0]};
 
             obj.x = [0; 0];     %Init position = init velocity = 0
