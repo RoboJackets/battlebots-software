@@ -30,7 +30,7 @@ slew_rate = 1e40; % V / s
 
 dt = 1e-5; % modeling physics at this rate (seconds)
 Ts = 1/(3.2e3); % algorithms updating at this rate (seconds)
-duration = 5; % simulation duration (seconds)
+duration = 6; % simulation duration (seconds)
 
 initial_position = 0; % inital heading (radians)
 initial_velocity = 0; % initial angular velocity (radians / second)
@@ -38,7 +38,11 @@ initial_voltage = 0; % initial motor voltage (volts fuck u think)
 initial_extrestorque = 0; % initial external resistive torque (volts)
 
 use_perfect_accs = false;
-use_ir_beacons = false;
+accScaling = 1.0;
+if(~use_perfect_accs)
+    accScaling = .98;
+end
+use_ir_beacons = true;
 
 
 %% SENSOR PARAMETERS
@@ -177,16 +181,26 @@ for k=2:steps
     
     % Assemble accelerometer measurements
     meas = abs(cent_accel_guess);
+    meas = meas .* accScaling;
     % Predict state using EKF
     %                  meas  u             t       sensor
     pred = HEKF.update(meas, uu(k - 1, 1), k * Ts, 'acc');
     
     % Assemble beacon measurements
+    if(k == 2)
+        prevAngle = 0;      %Angle in the previous controller step
+    end
     angle = wrapToPi(yy(k - 1, 1)) * 180 / pi;
-    inRange = (angle < 1 && angle > -1);
+    inRange = prevAngle < 0 && angle > 0;
     if(use_ir_beacons && inRange)
         pred = HEKF.update(0, uu(k - 1, 1), k * Ts, 'beacon');
     end
+    reflectionChance = 0.0;
+    inRange = (angle > 179 || angle < -179);
+    if(use_ir_beacons && inRange && rand() < reflectionChance)
+        pred = HEKF.update(0, uu(k - 1, 1), k * Ts, 'beacon');
+    end
+    prevAngle = angle;
     
     pred_hist(k, :) = pred;
     
@@ -358,8 +372,7 @@ end
 
 sgtitle("Accelerometers", "FontSize", 18);
 
-%% EKF ERROR PLOTS (This part was broken by transition to hybrid EKF, will fix later)
-% Length of x_all no longer equals yy, need to do some interpolation
+%% EKF ERROR PLOTS
 
 % error = HEKF.x_all' - yy;
 error = pred_hist - [wrapToPi(yy(:, 1)) yy(:, 2)];
