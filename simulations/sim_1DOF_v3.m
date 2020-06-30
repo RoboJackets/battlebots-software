@@ -325,11 +325,20 @@ for k=2:steps
 %     end
     
     % Assemble beacon measurements
+    if(k == 2)
+        prevAngle = 0;      %Angle in the previous controller step
+    end
     angle = wrapToPi(yy(k - 1, 1)) * 180 / pi;
-    inRange = (angle < 1 && angle > -1);
+    inRange = prevAngle < 0 && angle > 0;
     if(use_ir_beacons && inRange)
         pred = HEKF.update(0, uu(k - 1, 1), k * Ts, 'beacon');
     end
+    reflectionChance = 0.0;
+    inRange = (angle > 179 || angle < -179);
+    if(use_ir_beacons && inRange && rand() < reflectionChance)
+        pred = HEKF.update(0, uu(k - 1, 1), k * Ts, 'beacon');
+    end
+    prevAngle = angle;
     
     pred_hist(k, :) = pred;
     pred = pred(1:2);
