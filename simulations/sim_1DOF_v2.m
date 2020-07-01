@@ -120,7 +120,7 @@ deltaVolt = 1e-1; % max change in volts every Ts
 maxVolt = 22; % max voltage we can input
 minVolt = -22; % min voltage we can input
 %                      dt  alpha  beta  accR,          wheelR                botR                  imus
-HEKF = MeltyBrain_HEKF(dt, alpha, beta, acc_pos(1, 1), 0.0254 .* r_wheel_im, 0.0254 .* r_robot_im, size(acc_pos, 1))
+HEKF = MeltyBrain_HEKF(dt, alpha, beta, acc_pos(:, 1), 0.0254 .* r_wheel_im, 0.0254 .* r_robot_im, size(acc_pos, 1))
  
 
 %% SIMULATION EXECUTION 
