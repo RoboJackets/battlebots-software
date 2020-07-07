@@ -10,7 +10,7 @@ float dt;
 void setup() {
   Serial.begin(115200);
   tgtFreq = 1000; // Target update frequency
-  dt = 1e-6; // CT timestep
+  dt = 1e-4; // CT timestep
   duration = 5; // Expected time to simulate
 
   updates = duration * tgtFreq; // Number of updates to execute
@@ -29,25 +29,33 @@ void loop() {
   Matrix<float, 2, 1> C;
   C << 0.1, 0.2;
   
-  Matrix<float, 2, 2> temp2_2;
-  Matrix<float, 2, 1> temp2_1;
+  Matrix<float, 2, 2>* temp2_2 = (Matrix<float, 2, 2>*) malloc(sizeof(Matrix<float, 2, 2>));
+  Matrix<float, 2, 1>* temp2_1 = (Matrix<float, 2, 1>*) malloc(sizeof(Matrix<float, 2, 1>));
 
   unsigned long startT = micros(); // Start time
 
   for(int i = 0; i < updates; i++) {
     for(int n = 0; n < matMults; n++) {
-      temp2_2 = A * B;
+      *temp2_2 = A * B;
     }
     for(int n = 0; n < vecMults; n++) {
-      temp2_1 = A * C;
+      *temp2_1 = A * C;
     }
     for(int n = 0; n < invs; n++) {
-      temp2_2 = A.inverse();
+      *temp2_2 = A.inverse();
     }
   }
+  free(temp2_2);
+  free(temp2_1);
 
   unsigned long endT = micros(); // End time
-  unsigned long diff = endT - startT; // Difference in microseconds
-  Serial.println(diff);
+  unsigned int diff = (float)(endT - startT) / 1e6; // Difference in seconds
+  unsigned int trueFreq = updates / diff;
+
+  char result[100];
+  sprintf(result, "Time difference: %d s", diff);
+  Serial.println(result);
+  sprintf(result, "True frequency: %d Hz", trueFreq);
+  Serial.println(result);
   delay(5000);
 }
