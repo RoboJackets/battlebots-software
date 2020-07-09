@@ -1,5 +1,5 @@
 clear;
-close all;
+% close all;
 
 %% PHYSICAL PARAMETERS AND CONSTANTS
 
@@ -37,7 +37,9 @@ initial_velocity = 0; % initial angular velocity (radians / second)
 initial_voltage = 0; % initial motor voltage (volts fuck u think)
 initial_extrestorque = 0; % initial external resistive torque (volts)
 
+trans_accel = [0 30]; % trans accel in [+x, +y] direction
 use_perfect_accs = false;
+use_random_accs = false;
 accScaling = 1.0;
 if(~use_perfect_accs)
     accScaling = .98;
@@ -68,7 +70,7 @@ for k=1:size(acc_pos, 1)
     if use_perfect_accs
         acc_params = [acc_params ; getAccParams("perfect", 1)];        
     else
-        acc_params = [acc_params ; getAccParams("ADXL375", 1)];
+        acc_params = [acc_params ; getAccParams("ADXL375", use_random_accs)];
     end
 
     accs{k, 1} = imuSensor("accel-mag", "SampleRate", 1/Ts, ...
@@ -150,10 +152,13 @@ for k=2:steps
     cent_accel_read = cent_accel(end, :).';
     
     for kacc = 1:size(acc_pos, 1)
+        acck_ang = deg2rad(acc_pos(kacc, 2)) + yy(k, 1) - deg2rad(acc_dir(kacc));
         ay = tang_accel_read(kacc) .* cosd(acc_dir(kacc)) ...
-            - cent_accel_read(kacc) .* sind(acc_dir(kacc));
+            - cent_accel_read(kacc) .* sind(acc_dir(kacc)) + ...
+            + trans_accel * [cos(acck_ang); sin(acck_ang)];
         ax = -cent_accel_read(kacc) .* cosd(acc_dir(kacc)) ...
-            - tang_accel_read(kacc) .* sind(acc_dir(kacc));
+            - tang_accel_read(kacc) .* sind(acc_dir(kacc)) + ...
+            + trans_accel * [sin(acck_ang); -cos(acck_ang)];
         acc_true(kacc, k, :) = [ax ay 0];
         curr_acc = accs{kacc, 1};
 %       [acc_readings, ~] = curr_acc(squeeze(acc_true(kacc, 1:k, :)), ...
