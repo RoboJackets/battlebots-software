@@ -1,5 +1,5 @@
 clear;
-% close all;
+close all;
 
 %% PHYSICAL PARAMETERS AND CONSTANTS
 
@@ -37,7 +37,7 @@ initial_velocity = 0; % initial angular velocity (radians / second)
 initial_voltage = 0; % initial motor voltage (volts fuck u think)
 initial_extrestorque = 0; % initial external resistive torque (volts)
 
-trans_accel = [0 30]; % trans accel in [+x, +y] direction
+trans_accel = [0 0]; % trans accel in [+x, +y] direction
 use_perfect_accs = false;
 use_random_accs = false;
 accScaling = 1.0;
@@ -61,7 +61,7 @@ acc_pos_im = [0.5 0; 0.5 90; 0.5 180; 0.5 270];
 % location in polar coordinates, each row is a 
 % different sensor with radius and heading from center (distance in inches)
 acc_pos = [acc_pos_im(:, 1) .* 0.0254 acc_pos_im(:, 2)];
-acc_dir = [40 ; 40; 40; 40]; 
+acc_dir = [0 ; 0; 0; 0]; 
 % angle deviation CW of +y on acc from direction of 
 % tangential acceleration if robot rotating CCW
 acc_params = [];
