@@ -28,18 +28,19 @@ slew_rate = 1e40; % V / s
     
 %% SIMULATION PARAMETERS
 
-dt = 1e-5; % modeling physics at this rate (seconds)
+dt = 1e-7; % modeling physics at this rate (seconds)
+hekf_dt = 5e-6;
 Ts = 1/(3.2e3); % algorithms updating at this rate (seconds)
 duration = 6; % simulation duration (seconds)
 
 initial_position = 0; % inital heading (radians)
 initial_velocity = 0; % initial angular velocity (radians / second)
-initial_voltage = 0; % initial motor voltage (volts fuck u think)
+initial_voltage = 3; % initial motor voltage (volts fuck u think)
 initial_extrestorque = 0; % initial external resistive torque (volts)
 
 trans_accel = [0 0]; % trans accel in [+x, +y] direction
 use_perfect_accs = false;
-use_random_accs = true;
+use_random_accs = false;
 accScaling = 1.0;
 if(~use_perfect_accs)
     accScaling = .98;
@@ -60,7 +61,7 @@ sys_temp = 25; % temperature in celsius
 
 % location in polar coordinates, each row is a 
 % different sensor with radius and heading from center (distance in inches)
-acc_pos_im = [0.5 0; 0.5 90; 0.5 180; 0.5 270];
+acc_pos_im = [0.35 0; 0.35 90; 0.35 180; 0.35 270];
 acc_pos = [acc_pos_im(:, 1) .* 0.0254 acc_pos_im(:, 2)];
 
 % angle deviation CW from +j_hat vector on acc
@@ -109,6 +110,7 @@ yy = zeros(steps, 2); % all states (steps -> angular position in rad,
                       %                         angular velocity in rad/s)
 pred_hist = zeros(steps, 2);
 ang_accel_guesses = zeros(steps, numel(acc_dir));
+ang_accel_pred_hist = zeros(steps, 1);
 acc_true = zeros(size(acc_pos, 1), steps, 3);                      
 acc_data = zeros(size(acc_pos, 1), steps, 3);
 yy_all = zeros(numel(tt).*(steps-1), 2); % yy but with like wayyy moreu(1, :) = u0;
@@ -119,12 +121,19 @@ for k=1:size(acc_pos, 1)
 end
 
 %% EKF Setup
-targ_angvel = 3000 / 60 * 2 * pi; % target angular velocity
-deltaVolt = 1e-1; % max change in volts every Ts
+targ_angvel = 370; % target angular velocity (rad/s)
+thresh_angvel = 0.04 * targ_angvel;
+
+deltaVolt = 4e-2; % max change in volts every Ts
+deltaVolt_SS = 4e-2; % max change in volts every Ts once steady-state hit
+ss_hit = false;
 maxVolt = 22; % max voltage we can input
 minVolt = -22; % min voltage we can input
+
 %                      dt  alpha  beta  accR,          wheelR                botR                  imus
-HEKF = MeltyBrain_HEKF(dt, alpha, beta, acc_pos(:, 1), 0.0254 .* r_wheel_im, 0.0254 .* r_robot_im, size(acc_pos, 1))
+HEKF = MeltyBrain_HEKF(hekf_dt, alpha, beta, acc_pos(:, 1), 0.0254 .* r_wheel_im, 0.0254 .* r_robot_im, size(acc_pos, 1))
+
+ang_accel_win = zeros(7, 1);
  
 
 %% SIMULATION EXECUTION 
@@ -188,15 +197,13 @@ for k=2:steps
     tang_accel_guess = ...
         -reshape(acc_data(:, k, 1), [numel(acc_dir) 1]) .* sin(acc_ang) ...
         + reshape(acc_data(:, k, 2), [numel(acc_dir) 1]) .* cos(acc_ang);
-    ang_accel_guess = tang_accel_guess ./ acc_pos(:, 1);
-    ang_accel_guesses(k, :) = ang_accel_guess;
-    ang_accel_guess = mean(ang_accel_guess);
+    
     % Assemble accelerometer measurements
     meas = abs(cent_accel_guess);
     meas = meas .* accScaling;
     % Predict state using EKF
     %                  meas  u             t       sensor
-    pred = HEKF.update(meas, uu(k - 1, 1), k * Ts, 'acc');
+    pred = HEKF.update(meas, uu(k - 1, 1), k * Ts, 'acc');  
     
     % Assemble beacon measurements
     if(k == 2)
@@ -216,19 +223,52 @@ for k=2:steps
     
     pred_hist(k, :) = pred;
     
-    % Velocity limiting algorithm
-    if pred(2) > targ_angvel
-        uu(k, :) = [uu(k-1, 1) - deltaVolt 0];
+     % Guess at the current angular acceleration
+
+    if pred(2) < thresh_angvel
+        ang_accel_guess = tang_accel_guess ./ acc_pos(:, 1);
+        ang_accel_guesses(k, :) = ang_accel_guess;
+        ang_accel_guess = mean(ang_accel_guess);
+        ang_accel_win = [ang_accel_guess; ang_accel_win(1:end-1)];
+        ang_accel_filt = mean(ang_accel_win);
+        ang_accel_pred = ang_accel_filt;
+    else
+        ang_accel_pred = (pred(2) - pred_hist(k-1, 2)) ./ Ts;
+    end
+    ang_accel_pred_hist(k) = ang_accel_pred;
+    
+    % Check if SS hit according to HEKF
+    if ~ss_hit && pred(2) >= targ_angvel
+        ss_hit = true;
+    end
+    
+    % Change voltages or something %
+    if ang_accel_pred < 0.95*a_max % safe from slip land % 
+        if pred(2) > targ_angvel % too fast too quick
+            if ss_hit
+                uu(k, :) = [uu(k-1, 1) - deltaVolt_SS 0];
+            else
+                uu(k, :) = [uu(k-1, 1) - deltaVolt 0];                
+            end
+            if uu(k, 1) < minVolt
+                uu(k, 1) = minVolt;
+            end
+        else % too slow :( %
+            if ss_hit
+                uu(k, :) = [uu(k-1, 1) + deltaVolt_SS 0];
+            else
+                uu(k, :) = [uu(k-1, 1) + deltaVolt 0];                
+            end
+            if uu(k, 1) > maxVolt
+                uu(k, 1) = maxVolt;
+            end
+        end
+    else
+        % big change in V to prevent slip %
+        uu(k, :) = [uu(k-1, 1) - 2.5e0*deltaVolt 0];
         if uu(k, 1) < minVolt
             uu(k, 1) = minVolt;
         end
-    elseif pred(2) < targ_angvel
-        uu(k, :) = [uu(k-1, 1) + deltaVolt 0];
-        if uu(k, 1) > maxVolt
-            uu(k, 1) = maxVolt;
-        end
-    else
-        uu(k, :) = uu(k-1, :);
     end
     
 end
@@ -261,7 +301,7 @@ axis on; grid on; hold on;
 plot(TTplot, yy(:, 2).*180./pi, ...
     TTplot_all, yy_all(:, 2).*180/pi, ...
     'LineWidth', 2);
-yline(18000, "LineWidth", 2);
+yline(targ_angvel * 180 / pi, "LineWidth", 2);
 HEKF.plotVel(fig, 2, 2, 2);
 ylabel("Angular Velocity (deg/s)");
 xlabel("Time (s)");
@@ -277,9 +317,11 @@ subplot(2, 2, 4);
 axis on; grid on;
 plot(TTplot_all(1 : end - 1), a_all .* 180 / pi, 'LineWidth', 2);
 hold on;
-plot(TTplot, mean(ang_accel_guesses, 2) .* 180 / pi, 'LineWidth', 2);
+plot(TTplot, ang_accel_pred_hist .* 180 / pi, ':', 'LineWidth', 2);
 yline(a_max .* 180 / pi, 'LineWidth', 2);
 hold off;
+h = get(gca, 'Children');
+set(gca, 'Children', [h(3) h(2) h(1)]);
 ylabel("Angular Acceleration (deg/s^2)");
 xlabel("Time (s)");
 legend("Actual Angular Acceleration",  "Estimated Angular Acceleration", ...
