@@ -113,6 +113,7 @@ ang_accel_pred_hist = zeros(steps, 1);
 acc_true = zeros(size(acc_pos, 1), steps, 3);                      
 acc_data = zeros(size(acc_pos, 1), steps, 3);
 yy_all = zeros(numel(tt).*(steps-1), 2); % yy but with like wayyy more
+uu(1, :) = u0;
 yy(1, :) = x0;
 for k=1:size(acc_pos, 1)
     acc_true(k, 1, :) = [0 0 0];
