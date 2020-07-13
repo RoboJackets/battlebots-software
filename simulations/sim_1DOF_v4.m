@@ -81,19 +81,6 @@ for k=1:size(acc_pos, 1)
         "Accelerometer", acc_params(k));
 end
 
-%% PAIR ACCELEROMETERS
-
-[pairs1, pairs2] = meshgrid(1:numel(acc_dir), 1:numel(acc_dir));
-pairs = [pairs1(:) pairs2(:)];
-pairs = pairs(pairs(:, 2) > pairs(:, 1), :);
-pairs_d = [acc_pos(pairs(:, 2), 1).*cosd(acc_pos(pairs(:, 2), 2)) ...
-    - acc_pos(pairs(:, 1), 1).*cosd(acc_pos(pairs(:, 1), 2)) ...
-    acc_pos(pairs(:, 2), 1).*sind(acc_pos(pairs(:, 2), 2)) ...
-    - acc_pos(pairs(:, 1), 1).*sind(acc_pos(pairs(:, 1), 2))
-];
-pairs_d = [sqrt(pairs_d(:, 2).^2 + pairs_d(:, 1).^2) atan2(pairs_d(:, 2), pairs_d(:, 1))];
-
-
 %% CALCULATE MAX ANGULAR ACCELERATION
 %The maximum force of static friction on each wheel
 %Given by half the weight of the robot (converted to N) * static friction
@@ -111,6 +98,7 @@ a_max = torque_max / I_robot;             %Torque = I * a
 % sysd = c2d(sys, dt); % ??? discretize ??? maybe ??? faster ???
 sysd = sys;
 
+
 u0 = [initial_voltage initial_extrestorque]; % initial input state
 x0 = [initial_position initial_velocity];    % initial state space state
 TT = 0:Ts:duration;   % algorithm evaluation times (seconds)
@@ -125,7 +113,6 @@ ang_accel_pred_hist = zeros(steps, 1);
 acc_true = zeros(size(acc_pos, 1), steps, 3);                      
 acc_data = zeros(size(acc_pos, 1), steps, 3);
 yy_all = zeros(numel(tt).*(steps-1), 2); % yy but with like wayyy more
-uu(1, :) = u0;
 yy(1, :) = x0;
 for k=1:size(acc_pos, 1)
     acc_true(k, 1, :) = [0 0 0];
@@ -143,11 +130,11 @@ ss_hit = false;
 maxVolt = 22; % max voltage we can input
 minVolt = -22; % min voltage we can input
 
-%                      dt       alpha  beta  accD,          wheelR                botR                  imus
-HEKF = MeltyBrain_HEKF(hekf_dt, alpha, beta, pairs_d(:, 1), 0.0254 .* r_wheel_im, 0.0254 .* r_robot_im, size(pairs, 1))
- 
-ang_accel_win = zeros(7, 1);
+%                      dt  alpha  beta  accR,          wheelR                botR                  imus
+HEKF = MeltyBrain_HEKF(hekf_dt, alpha, beta, acc_pos(:, 1), 0.0254 .* r_wheel_im, 0.0254 .* r_robot_im, size(acc_pos, 1))
 
+ang_accel_win = zeros(7, 1);
+ 
 
 %% SIMULATION EXECUTION 
 
@@ -201,47 +188,22 @@ for k=2:steps
     %voltage
     % precalculate the centripetal and tangential acceleration 
     % from the measured data first
-
-    % a_c_pair_sensor1 = a_y1*sin(heading_1 + <pair) + a_x1*cos(heading_1 +
-    % <pair)
-    % a_c_pair_sensor2 = a_y2*sin(heading_2 + <pair) + a_x2*cos(heading_2 +
-    % <pair)
-    % a_c_pair = abs(a_c_pair_sensor2 - a_c_pair_sensor1)
-    cent_accel_guess_sens2 = ...
-        reshape(acc_data(pairs(:, 2), k, 2), [size(pairs, 1) 1]) .* ...
-            sin(deg2rad(acc_dir(pairs(:, 2))) + pairs_d(:, 2)) ...
-        + reshape(acc_data(pairs(:, 2), k, 1), [size(pairs, 1) 1]) .* ...
-            cos(deg2rad(acc_dir(pairs(:, 2))) + pairs_d(:, 2));
-    cent_accel_guess_sens1 = ...
-        reshape(acc_data(pairs(:, 1), k, 2), [size(pairs, 1) 1]) .* ...
-            sin(deg2rad(acc_dir(pairs(:, 1))) + pairs_d(:, 2)) ...
-        + reshape(acc_data(pairs(:, 1), k, 1), [size(pairs, 1) 1]) .* ...
-            cos(deg2rad(acc_dir(pairs(:, 1))) + pairs_d(:, 2));
-    cent_accel_guess = cent_accel_guess_sens2 - cent_accel_guess_sens1;
-    
-    % a_t_pair_sensor1 = a_y1*cos(heading_1 + <pair) - a_x1*sin(heading_1 +
-    % <pair)
-    % a_t_pair_sensor2 = a_y2*cos(heading_2 + <pair) - a_x2*sin(heading_2 +
-    % <pair)
-    % a_t_pair = abs(a_c_pair_sensor2 - a_c_pair_sensor1)    
-    tang_accel_guess_sens2 = ...
-        reshape(acc_data(pairs(:, 2), k, 2), [size(pairs, 1) 1]) .* ...
-            cos(deg2rad(acc_dir(pairs(:, 2))) + pairs_d(:, 2)) ...
-        - reshape(acc_data(pairs(:, 2), k, 1), [size(pairs, 1) 1]) .* ...
-            sin(deg2rad(acc_dir(pairs(:, 2))) + pairs_d(:, 2));
-    tang_accel_guess_sens1 = ...
-        reshape(acc_data(pairs(:, 1), k, 2), [size(pairs, 1) 1]) .* ...
-            cos(deg2rad(acc_dir(pairs(:, 1))) + pairs_d(:, 2)) ...
-        - reshape(acc_data(pairs(:, 1), k, 1), [size(pairs, 1) 1]) .* ...
-            sin(deg2rad(acc_dir(pairs(:, 1))) + pairs_d(:, 2));
-    tang_accel_guess = tang_accel_guess_sens2 - tang_accel_guess_sens1;
+    % a_c = a_y * sin() + a_x * cos()
+    acc_ang = deg2rad(acc_pos(:, 2) + acc_dir);
+    cent_accel_guess = ...
+        -reshape(acc_data(:, k, 1), [numel(acc_dir) 1]) .* cos(acc_ang) ...
+        + -reshape(acc_data(:, k, 2), [numel(acc_dir) 1]) .* sin(acc_ang); 
+    % a_t = -a_x*sin(theta) + a_y*cos(theta) 
+    tang_accel_guess = ...
+        -reshape(acc_data(:, k, 1), [numel(acc_dir) 1]) .* sin(acc_ang) ...
+        + reshape(acc_data(:, k, 2), [numel(acc_dir) 1]) .* cos(acc_ang);
     
     % Assemble accelerometer measurements
     meas = abs(cent_accel_guess);
     meas = meas .* accScaling;
     % Predict state using EKF
     %                  meas  u             t       sensor
-    pred = HEKF.update(meas, uu(k - 1, 1), k * Ts, 'acc');
+    pred = HEKF.update(meas, uu(k - 1, 1), k * Ts, 'acc');  
     
     % Assemble beacon measurements
     if(k == 2)
@@ -263,7 +225,7 @@ for k=2:steps
     
     % Guess at the current angular acceleration
     if pred(2) < thresh_angvel
-        ang_accel_guess = tang_accel_guess ./ pairs_d(:, 1);
+        ang_accel_guess = tang_accel_guess ./ acc_pos(:, 1);
         ang_accel_guess = mean(ang_accel_guess);
         ang_accel_win = [ang_accel_guess; ang_accel_win(1:end-1)];
         ang_accel_filt = mean(ang_accel_win);
@@ -362,6 +324,7 @@ ylabel("Angular Acceleration (deg/s^2)");
 xlabel("Time (s)");
 h = get(gca, 'Children');
 set(gca, 'Children', [h(3) h(2) h(1)]);
+
 
 sgtitle(sprintf(['Robot Dynamic Modeling: Kv=%.2e, D=%.3f, R=%.3f, ', ...
     'BotR=%.1f, BotW=%.1f, WheelR=%.1f, WheelW=%.1f, SR=%.1e, ', ...
