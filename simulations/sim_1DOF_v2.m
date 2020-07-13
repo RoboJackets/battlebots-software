@@ -29,8 +29,8 @@ slew_rate = 1e40; % V / s
 %% SIMULATION PARAMETERS
 
 dt = 1e-7; % modeling physics at this rate (seconds)
-hekf_dt = 5e-6;
 Ts = 1/(3.2e3); % algorithms updating at this rate (seconds)
+hekf_dt = Ts / 10; % 15 HEKF sim steps per update
 duration = 6; % simulation duration (seconds)
 
 initial_position = 0; % inital heading (radians)
@@ -65,7 +65,7 @@ acc_pos_im = [0.35 0; 0.35 90; 0.35 180; 0.35 270];
 acc_pos = [acc_pos_im(:, 1) .* 0.0254 acc_pos_im(:, 2)];
 
 % angle deviation CW from +j_hat vector on acc
-acc_dir = [45 ; 45; 45; 45]; 
+acc_dir = [45; 45; 45; 45]; 
 
 acc_params = [];
 accs = cell(numel(acc_params), 1);
@@ -109,11 +109,10 @@ uu = zeros(steps, 2); % all inputs (steps -> motor voltage (volts),
 yy = zeros(steps, 2); % all states (steps -> angular position in rad, 
                       %                         angular velocity in rad/s)
 pred_hist = zeros(steps, 2);
-ang_accel_guesses = zeros(steps, numel(acc_dir));
 ang_accel_pred_hist = zeros(steps, 1);
 acc_true = zeros(size(acc_pos, 1), steps, 3);                      
 acc_data = zeros(size(acc_pos, 1), steps, 3);
-yy_all = zeros(numel(tt).*(steps-1), 2); % yy but with like wayyy moreu(1, :) = u0;
+yy_all = zeros(numel(tt).*(steps-1), 2); % yy but with like wayyy more
 yy(1, :) = x0;
 for k=1:size(acc_pos, 1)
     acc_true(k, 1, :) = [0 0 0];
@@ -121,6 +120,7 @@ for k=1:size(acc_pos, 1)
 end
 
 %% EKF Setup
+
 targ_angvel = 370; % target angular velocity (rad/s)
 thresh_angvel = 0.04 * targ_angvel;
 
@@ -223,11 +223,9 @@ for k=2:steps
     
     pred_hist(k, :) = pred;
     
-     % Guess at the current angular acceleration
-
+    % Guess at the current angular acceleration
     if pred(2) < thresh_angvel
         ang_accel_guess = tang_accel_guess ./ acc_pos(:, 1);
-        ang_accel_guesses(k, :) = ang_accel_guess;
         ang_accel_guess = mean(ang_accel_guess);
         ang_accel_win = [ang_accel_guess; ang_accel_win(1:end-1)];
         ang_accel_filt = mean(ang_accel_win);
@@ -320,12 +318,13 @@ hold on;
 plot(TTplot, ang_accel_pred_hist .* 180 / pi, ':', 'LineWidth', 2);
 yline(a_max .* 180 / pi, 'LineWidth', 2);
 hold off;
-h = get(gca, 'Children');
-set(gca, 'Children', [h(3) h(2) h(1)]);
-ylabel("Angular Acceleration (deg/s^2)");
-xlabel("Time (s)");
 legend("Actual Angular Acceleration",  "Estimated Angular Acceleration", ...
     "Maximum Allowable Angular Acceleration");
+ylabel("Angular Acceleration (deg/s^2)");
+xlabel("Time (s)");
+h = get(gca, 'Children');
+set(gca, 'Children', [h(3) h(2) h(1)]);
+
 
 sgtitle(sprintf(['Robot Dynamic Modeling: Kv=%.2e, D=%.3f, R=%.3f, ', ...
     'BotR=%.1f, BotW=%.1f, WheelR=%.1f, WheelW=%.1f, SR=%.1e, ', ...
