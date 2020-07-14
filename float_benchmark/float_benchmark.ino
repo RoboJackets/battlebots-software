@@ -1,6 +1,5 @@
-#include <stlport.h>
-#include <Eigen30.h>
-#include <Eigen/Dense>
+#include <Eigen337.h>
+#include <Dense>
 using namespace Eigen;
 
 //Declare benchmarking parameters
@@ -34,14 +33,14 @@ void loop() {
 
   unsigned long startT = micros(); // Start time
 
-  for(int i = 0; i < updates; i++) {
-    for(int n = 0; n < matMults; n++) {
+  for(unsigned int i = 0; i < updates; i++) {
+    for(unsigned int n = 0; n < matMults; n++) {
       *temp2_2 = A * B;
     }
-    for(int n = 0; n < vecMults; n++) {
+    for(unsigned int n = 0; n < vecMults; n++) {
       *temp2_1 = A * C;
     }
-    for(int n = 0; n < invs; n++) {
+    for(unsigned int n = 0; n < invs; n++) {
       *temp2_2 = A.inverse();
     }
   }
