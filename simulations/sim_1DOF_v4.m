@@ -5,7 +5,7 @@ close all;
 
 % using: Scorpion HKIV-4020-860KV
 Kv = 860; % Motor Constant (RPM / Volt)
-gear_rat = 2; % gear ratio (RPM / RPM)
+gear_rat = 0.5; % gear ratio (RPM / RPM)
 Kt = inv(2*pi*Kv*gear_rat/60); % Kt = 1/Kv if Kv is in (rad/s)/Volt
 % Kt = 318; % Motor Constant (N * m / A)
 D = 1e-3; % Frictional Loss Constant (N * m * s / rad)
