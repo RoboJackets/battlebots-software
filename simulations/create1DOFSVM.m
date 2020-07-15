@@ -1,5 +1,5 @@
 function [sys, A, B, C, D, alpha, beta] = create1DOFSVM(Kt, D, R, r_robot_im, ...
-    w_robot_im, r_wheel_im, w_wheel_im)
+    w_robot_im, r_wheel_im, w_wheel_im, mir)
 % CREATE1DOFSVM   Creates 1DOF SVM for a uniform disk with wheels 
 %                   meltybrain battlebot. 
 %
@@ -13,6 +13,7 @@ function [sys, A, B, C, D, alpha, beta] = create1DOFSVM(Kt, D, R, r_robot_im, ..
 % w_robot_im - Weight of Robot Body (in lbs)
 % r_wheel_im - Distance from Bot Center to Wheels (in inches)
 % w_robot_im - Weight of Robot Wheels (in lbs)
+% mir - moment of inertia (in kg*m^2)
 % TODO: REVIEW EQNS FOR ACCURACY
 
 r_robot = 0.0254 .* r_robot_im; % robot radius (m)
@@ -21,10 +22,14 @@ r_wheel = 0.0254 .* r_wheel_im; % wheel radius (m)
 w_wheel = 0.453592 .* w_wheel_im; % wheel mass (kg)
 
 % inertia in kg * m^2
-I_robot = 0.5 .* w_robot .* r_robot .^ 2; % robot body inertia
-I_wheel = 0.5 .* w_wheel .* r_wheel .^ 2; % wheel inertia
-J = 2 .* I_wheel + I_robot .* r_wheel .^ 2 ./ (r_robot .^ 2); 
-    % effective inertia 
+if nargin < 8
+    I_robot = 0.5 .* w_robot .* r_robot .^ 2; % robot body inertia
+    I_wheel = 0.5 .* w_wheel .* r_wheel .^ 2; % wheel inertia
+    J = 2 .* I_wheel + I_robot .* r_wheel .^ 2 ./ (r_robot .^ 2); 
+        % effective inertia 
+else
+    J = mir;
+end
 alpha = (Kt.^2 + D .* R ./ 2) ./ (J .* R ./ 2); % in seconds / meter
 % R / 2 as these are TWO MOTORS acting IDENTICALLY
 beta = Kt ./ (J .* R); % in (V * m)^-1
