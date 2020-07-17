@@ -8,7 +8,7 @@ Kv = 860; % Motor Constant (RPM / Volt)
 gear_rat = 1; % gear ratio (RPM / RPM)
 Kt = inv(2*pi*Kv*gear_rat/60); % Kt = 1/Kv if Kv is in (rad/s)/Volt
 % Kt = 318; % Motor Constant (N * m / A)
-D = 1e-7; % Frictional Loss Constant (N * m * s / rad)
+D = 1e-5; % Frictional Loss Constant (N * m * s / rad)
 R = 12e-3; % Motor Resistance (Ohms)
 
 r_robot_im = 3; % robot radius (in)
@@ -36,8 +36,8 @@ slew_rate = 1e40; % V / s
 %% SIMULATION PARAMETERS
 
 dt = 1e-7; % modeling physics at this rate (seconds)
-Ts = 1/(3.2e3); % algorithms updating at this rate (seconds)
-hekf_dt = Ts / 10; % 15 HEKF sim steps per update
+Ts = 1/(1e3); % algorithms updating at this rate (seconds)
+hekf_dt = Ts / 10; % 10 HEKF sim steps per update
 duration = 6; % simulation duration (seconds)
 
 initial_position = 0; % inital heading (radians)
@@ -54,16 +54,30 @@ if(~use_perfect_accs)
     accScaling = 1;
 end
 use_ir_beacons = false;
-
+use_mag = true;
 
 %% SENSOR PARAMETERS
 
+% General %
+sys_temp = 25;
+
+
+% IR %
 ir_eps = 1e-1; % epsilon for detecting ir beacon
 
 
+% MAG % 
+mag_pos_im = [3 90];
+mag_pos = [mag_pos_im(:, 1) .* 0.0254 mag_pos_im(:, 2)];
+mag_dir = 45;
+mag_params = getMagParams("HMC1052", 10, 5, false);
+mag = imuSensor("accel-mag", "SampleRate", 1/Ts, ...
+    "Temperature", sys_temp, ...
+    "Magnetometer", mag_params); 
+
+% ACCS %
 % all angles are in degrees for defining parameters ok just deal
 g = 9.81; % m / s^2
-sys_temp = 25; % temperature in celsius
 % modeling the ADXL375 accelerometer 
 % www.analog.com/media/en/technical-documentation/data-sheets/ADXL375.pdf
 
@@ -132,6 +146,8 @@ pred_hist = zeros(steps, 2);
 ang_accel_pred_hist = zeros(steps, 1);
 acc_true = zeros(size(acc_pos, 1), steps, 3);                      
 acc_data = zeros(size(acc_pos, 1), steps, 3);
+mag_data = zeros(steps, 3); % +x, +y mag field
+mag_true = zeros(steps, 3);
 yy_all = zeros(numel(tt).*(steps-1), 2); % yy but with like wayyy more
 uu(1, :) = u0;
 yy(1, :) = x0;
@@ -152,7 +168,9 @@ maxVolt = 22; % max voltage we can input
 minVolt = -22; % min voltage we can input
 
 %                      dt       alpha  beta  accD,          wheelR                botR                  imus
-HEKF = MeltyBrain_HEKF(hekf_dt, alpha, beta, pairs_d(:, 1), 0.0254 .* r_wheel_im, 0.0254 .* r_robot_im, size(pairs, 1))
+HEKF = MeltyBrain_HEKF(hekf_dt, alpha, beta, pairs_d(:, 1), ...
+    0.0254 .* r_wheel_im, 0.0254 .* r_robot_im, size(pairs, 1), ...
+    deg2rad(mag_dir))
  
 ang_accel_win = zeros(7, 1);
 
@@ -267,6 +285,41 @@ for k=2:steps
     end
     prevAngle = angle;
     
+    % Assemble magnetometer measurements
+    
+    if use_mag
+        mag_ang_cent = deg2rad(mag_pos(2) + mag_dir);
+        mag_ang_xy = deg2rad(mag_dir) - yy(k, 1);
+        mag_cent_accel = (ang_vel.^2) .* mag_pos(1);
+        mag_cent_accel_read = mag_cent_accel(end);
+        mag_tang_accel = ang_accel .* mag_pos(1);
+        mag_tang_accel_read = mag_tang_accel(end);
+        mag_ay = -mag_cent_accel_read.*sin(mag_ang_cent) + ...
+            mag_tang_accel_read.*cos(mag_ang_cent) + ...
+            trans_accel * [sin(mag_ang_xy); cos(mag_ang_xy)];
+        mag_ax = -mag_cent_accel_read.*cos(mag_ang_cent) + ...
+            -mag_tang_accel_read.*sin(mag_ang_cent) + ...
+            trans_accel * [cos(mag_ang_xy); -sin(mag_ang_xy)];
+        mag_acc = [mag_ax mag_ay 0];
+        
+        mag_ang = yy(k, 1) - deg2rad(mag_dir);
+        mag_orientation = quaternion(cos(mag_ang/2), 0, 0, sin(mag_ang/2));
+
+        [~, mag_reading] = mag(mag_acc, [0 0 yy(k, 2)], mag_orientation);
+                
+        mag_data(k, :) = mag_reading;
+        
+        Bmag = norm(mag_reading(1:2), 2);
+        
+        mag_true(k, :) = [Bmag .* cos(mag_ang), -Bmag .* sin(mag_ang), 0];
+        
+        if pred(2) > targ_angvel / 3
+            pred = HEKF.update(mag_reading(1), uu(k-1, 1), k*Ts, 'mag_x', Bmag);
+            pred = HEKF.update(mag_reading(2), uu(k-1, 1), k*Ts, 'mag_y', Bmag);
+        end
+    
+    end
+    
     pred_hist(k, :) = pred;
     
     % Guess at the current angular acceleration
@@ -379,7 +432,7 @@ sgtitle(sprintf(['Robot Dynamic Modeling: Kv=%.2e, D=%.1e, R=%.3f, ', ...
     "FontSize", 18);
 
 
-%% SENSOR READING PLOTS
+%% ACCELEROMETER PLOTS
 
 figure('units','normalized','outerposition',[0 0 1 1])
 Nacc = size(acc_pos, 1);
@@ -473,6 +526,55 @@ for k=1:Nacc
 end
 
 sgtitle("Accelerometers", "FontSize", 18);
+
+%% MAGNETOMETER PLOTS
+
+if use_mag
+
+    figure;
+    
+    subplot(3, 2, 1);
+    plot(TTplot, mag_data(:, 1), 'LineWidth', 2);
+    hold on;
+    plot(TTplot, mag_true(:, 1), 'LineWidth', 2);
+    hold off;
+    ylabel("Magnetic Field +x (uT)");
+    xlabel("Time (s)");
+    title("X-Axis Magnetometer");
+    legend(["Measured", "True"]);
+    
+    subplot(3, 2, 2);
+    plot(TTplot, mag_data(:, 2), 'LineWidth', 2);
+    hold on;
+    plot(TTplot, mag_true(:, 2), 'LineWidth', 2);
+    hold off;
+    ylabel("Magnetic Field +y (uT)");
+    xlabel("Time (s)");
+    title("Y-Axis Magnetometer");
+    legend(["Measured", "True"]);
+    
+    subplot(3, 2, 3);
+    plot(TTplot, mag_data(:, 1) - mag_true(:, 1), 'LineWidth', 2);
+    ylabel("Magnetic Field +x Error (uT)");
+    xlabel("Time (s)");
+    
+    subplot(3, 2, 4);
+    plot(TTplot, mag_data(:, 2) - mag_true(:, 2), 'LineWidth', 2);
+    ylabel("Magnetic Field +x Error (uT)");
+    xlabel("Time (s)");
+    
+    subplot(3, 2, 5:6);
+    plot(TTplot, atan2(mag_data(:, 1), mag_data(:, 2)), 'LineWidth', 2);
+    hold on
+    plot(TTplot, wrapToPi(yy(:, 1)), 'LineWidth', 2);
+    hold off
+    ylabel("Atan2");
+    xlabel("Time (s)");
+    legend("Measured", "True");
+    
+    sgtitle("Magnetometers", "FontSize", 18);
+    
+end
 
 %% EKF ERROR PLOTS
 
