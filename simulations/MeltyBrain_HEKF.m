@@ -103,7 +103,7 @@ classdef MeltyBrain_HEKF < handle
             processVar = 0.1;   %Variance of the model
             imuVar = 80;        %Variance of imus
             beaconVar = 1e-3;    %Variance of beacon
-            magVar = 0.1;       % Variance of magnetometer 
+            magVar = 30;       % Variance of magnetometer 
             
             obj.P = [angleVar 0;            %Initial state covariance
                      0 0];                  %Velocity variance is 0 since w is guarunteed to be 0

@@ -5,31 +5,31 @@ close all;
 
 % using: Scorpion HKIV-4020-860KV
 Kv = 860; % Motor Constant (RPM / Volt)
-gear_rat = 1; % gear ratio (RPM / RPM)
+gear_rat = 0.5; % gear ratio (RPM / RPM)
 Kt = inv(2*pi*Kv*gear_rat/60); % Kt = 1/Kv if Kv is in (rad/s)/Volt
 % Kt = 318; % Motor Constant (N * m / A)
 D = 1e-5; % Frictional Loss Constant (N * m * s / rad)
 R = 12e-3; % Motor Resistance (Ohms)
 
-r_robot_im = 3; % robot radius (in)
+r_robot_im = 3.625; % robot radius (in)
 w_robot_im = 11.8; % robot weight (lbs)
 r_wheel_im = 1.5; % wheel radius (in)
 w_wheel_im = 0.2; % wheel weight (lbs)
 % the im suffix stands for imperial 
 
-r_robot_outer_im = 5;
+r_robot_outer_im = 5.25;
 w_robot_tot_im = 12;
 
 r_robot_outer = 0.0254 * r_robot_outer_im;
 w_robot_tot = 0.453592 * w_robot_tot_im;
-mir = r_robot_outer^2 * w_robot_tot * 1/2; % 3/4 is between a disk (1/2) and a ring (1)
+moi = r_robot_outer^2 * w_robot_tot * 1/2; % 3/4 is between a disk (1/2) and a ring (1)
 
 mu_static = 0.8; %Coefficient of static friction between wheel and ground
 
 slew_rate = 1e40; % V / s
 
 [sys, A, B, ~, ~, alpha, beta] = create1DOFSVM(Kt, D, R, ...
-    r_robot_im, w_robot_im, r_wheel_im, w_wheel_im, mir);
+    r_robot_im, w_robot_im, r_wheel_im, w_wheel_im, moi);
 
 
     
@@ -69,7 +69,7 @@ ir_eps = 1e-1; % epsilon for detecting ir beacon
 % MAG % 
 mag_pos_im = [3 90];
 mag_pos = [mag_pos_im(:, 1) .* 0.0254 mag_pos_im(:, 2)];
-mag_dir = 45;
+mag_dir = 0;
 mag_params = getMagParams("HMC1052", 10, 5, false);
 mag = imuSensor("accel-mag", "SampleRate", 1/Ts, ...
     "Temperature", sys_temp, ...
@@ -425,10 +425,10 @@ h = get(gca, 'Children');
 set(gca, 'Children', [h(3) h(2) h(1)]);
 
 sgtitle(sprintf(['Robot Dynamic Modeling: Kv=%.2e, D=%.1e, R=%.3f, ', ...
-    'BotR=%.1f, WheelR=%.1f, SR=%.1e, ', ...
+    'BotR=%.1f, WheelR=%.1f, GearR=%.2e, SlewR=%.1e, ', ...
     'Ts=%.1e, dt=%.1e'], ...
     Kv, D, R, r_robot_im, r_wheel_im, ...
-    slew_rate, Ts, dt), ...
+    gear_rat, slew_rate, Ts, dt), ...
     "FontSize", 18);
 
 
@@ -564,7 +564,7 @@ if use_mag
     xlabel("Time (s)");
     
     subplot(3, 2, 5:6);
-    plot(TTplot, atan2(mag_data(:, 1), mag_data(:, 2)), 'LineWidth', 2);
+    plot(TTplot, -atan2(mag_data(:, 2), mag_data(:, 1)), 'LineWidth', 2);
     hold on
     plot(TTplot, wrapToPi(yy(:, 1)), 'LineWidth', 2);
     hold off

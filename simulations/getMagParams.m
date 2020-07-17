@@ -11,7 +11,7 @@ if strcmp(partname, "HMC1052")
         mr = 6 .* gauss2uT;
         reso = mr / (2^(adcbits-1)); % negative too!
         constbias = [0 0 0];
-        axismis = [0 0 0] .* 3;
+        axismis = [1 1 0] .* 3;
         noisedens = (50 / 1e9 * (12/vrange) * gauss2uT) .* [1 1 1];
     end
     mag_params = magparams( ...
