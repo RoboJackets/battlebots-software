@@ -22,7 +22,7 @@ w_robot_tot_im = 12;
 
 r_robot_outer = 0.0254 * r_robot_outer_im;
 w_robot_tot = 0.453592 * w_robot_tot_im;
-moi = r_robot_outer^2 * w_robot_tot * 1/2; % 3/4 is between a disk (1/2) and a ring (1)
+moi = r_robot_outer^2 * w_robot_tot * 1/2; % bot between a disk (1/2) and a ring (1)
 
 mu_static = 0.8; %Coefficient of static friction between wheel and ground
 
@@ -55,6 +55,7 @@ if(~use_perfect_accs)
 end
 use_ir_beacons = false;
 use_mag = true;
+use_perfect_mag = false;
 
 %% SENSOR PARAMETERS
 
@@ -70,7 +71,11 @@ ir_eps = 1e-1; % epsilon for detecting ir beacon
 mag_pos_im = [3 90];
 mag_pos = [mag_pos_im(:, 1) .* 0.0254 mag_pos_im(:, 2)];
 mag_dir = 0;
-mag_params = getMagParams("HMC1052", 10, 5, false);
+if ~use_perfect_mag
+    mag_params = getMagParams("HMC1052", 10, 5, false);
+else
+    mag_params = getMagParams("perfect", 10, 5, false);
+end
 mag = imuSensor("accel-mag", "SampleRate", 1/Ts, ...
     "Temperature", sys_temp, ...
     "Magnetometer", mag_params); 
@@ -267,7 +272,7 @@ for k=2:steps
     meas = meas .* accScaling;
     % Predict state using EKF
     %                  meas  u             t       sensor
-    pred = HEKF.update(meas, uu(k - 1, 1), k * Ts, 'acc');
+    pred = HEKF.update(meas, uu(k - 1, 1), (k-1) * Ts, 'acc');
     
     % Assemble beacon measurements
     if(k == 2)
@@ -276,12 +281,12 @@ for k=2:steps
     angle = wrapToPi(yy(k - 1, 1)) * 180 / pi;
     inRange = prevAngle < 0 && angle > 0;
     if(use_ir_beacons && inRange)
-        pred = HEKF.update(0, uu(k - 1, 1), k * Ts, 'beacon');
+        pred = HEKF.update(0, uu(k - 1, 1), (k-1) * Ts, 'beacon');
     end
     reflectionChance = 0.0;
     inRange = (angle > 179 || angle < -179);
     if(use_ir_beacons && inRange && rand() < reflectionChance)
-        pred = HEKF.update(0, uu(k - 1, 1), k * Ts, 'beacon');
+        pred = HEKF.update(0, uu(k - 1, 1), (k-1) * Ts, 'beacon');
     end
     prevAngle = angle;
     
@@ -313,9 +318,9 @@ for k=2:steps
         
         mag_true(k, :) = [Bmag .* cos(mag_ang), -Bmag .* sin(mag_ang), 0];
         
-        if pred(2) > targ_angvel / 3
-            pred = HEKF.update(mag_reading(1), uu(k-1, 1), k*Ts, 'mag_x', Bmag);
-            pred = HEKF.update(mag_reading(2), uu(k-1, 1), k*Ts, 'mag_y', Bmag);
+        if pred(2) > targ_angvel / 1.5
+            pred = HEKF.update(mag_reading(1), uu(k-1, 1), (k-1)*Ts, 'mag_x', Bmag);
+            pred = HEKF.update(mag_reading(2), uu(k-1, 1), (k-1)*Ts, 'mag_y', Bmag);
         end
     
     end
