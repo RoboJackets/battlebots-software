@@ -1,11 +1,10 @@
-#include <Eigen337.h>
-#include <Dense>
+#include "src/Eigen/Eigen337.h"
+#include "src/Eigen/Dense.h"
 using namespace Eigen;
 
 //Declare benchmarking parameters
 unsigned int tgtFreq, duration, updates, matMults, vecMults, invs;
 float dt;
-
 void setup() {
   Serial.begin(115200);
   tgtFreq = 1000; // Target update frequency
