@@ -11,18 +11,20 @@ Kt = inv(2*pi*Kv*gear_rat/60); % Kt = 1/Kv if Kv is in (rad/s)/Volt
 D = 1e-5; % Frictional Loss Constant (N * m * s / rad)
 R = 12e-3; % Motor Resistance (Ohms)
 
-r_robot_im = 3.625; % robot radius (in)
+r_robot_im = 3.75; % robot radius (in)
 w_robot_im = 11.8; % robot weight (lbs)
 r_wheel_im = 1.5; % wheel radius (in)
 w_wheel_im = 0.2; % wheel weight (lbs)
 % the im suffix stands for imperial 
 
-r_robot_outer_im = 5.25;
+r_robot_outer_im = 5.375;
 w_robot_tot_im = 12;
 
 r_robot_outer = 0.0254 * r_robot_outer_im;
 w_robot_tot = 0.453592 * w_robot_tot_im;
-moi = r_robot_outer^2 * w_robot_tot * 1/2; % bot between a disk (1/2) and a ring (1)
+% moi = r_robot_outer^2 * w_robot_tot * 1; % bot between a disk (1/2) and a ring (1)
+moi_im = 203.925;
+moi = 0.453592 * (0.0254)^2 * moi_im;
 
 mu_static = 0.8; %Coefficient of static friction between wheel and ground
 
@@ -54,7 +56,7 @@ if(~use_perfect_accs)
     accScaling = 1;
 end
 use_ir_beacons = false;
-use_mag = true;
+use_mag = false;
 use_perfect_mag = false;
 
 %% SENSOR PARAMETERS
@@ -88,7 +90,7 @@ g = 9.81; % m / s^2
 
 % location in polar coordinates, each row is a 
 % different sensor with radius and heading from center (distance in inches)
-acc_pos_im = [0.35 0; 0.35 90; 0.35 180; 0.35 270];
+acc_pos_im = [0.715 0; 0.715 90; 0.715 180; 0.715 270];
 acc_pos = [acc_pos_im(:, 1) .* 0.0254 acc_pos_im(:, 2)];
 
 % angle deviation CW from +j_hat vector on acc
