@@ -14,6 +14,9 @@ using namespace Eigen;
 		wheelR: radius of the wheel
 		botR: radius from bot center to wheel location
 	Return: Pointer to the initialized HEKF
+
+	NOTE: The caller of this function is responsible for verifying the
+	returned pointer is not NULL
 */
 HEKF* initHEKF(float dt, float alpha, float beta, float wheelR, float botR) {
 	HEKF* filter = (HEKF*) malloc(sizeof(HEKF));				//Allocate space
@@ -113,8 +116,8 @@ unsigned int updateHEKF(HEKF* filter, Matrix<float, Dynamic, 1> meas,
 	//Prediction step
 	float T = (float)(t - filter->tUpdate) / 1e6;		//Time since last update in seconds
 	filter->u = input;									//Set the current input
-	filter->x = integrate(filter, filter->x, xDot, T);	//Integrate state
-	filter->P = integrate(filter, filter->P, PDot, T);	//Integrate state covariance
+	filter->x = integrate(filter, filter->x, &xDot, T);	//Integrate state
+	filter->P = integrate(filter, filter->P, &PDot, T);	//Integrate state covariance
 
 	//Update step
 	MatrixXf hk;		//Value of expected measurement for given state
@@ -151,4 +154,15 @@ unsigned int updateHEKF(HEKF* filter, Matrix<float, Dynamic, 1> meas,
 	(filter->x)(0) = wrapToPi((filter->x)(0));	//Constrain position to range (-pi, pi)
 	filter->tUpdate = t;						//Set time of last update to current time
 	return 1;
+}
+
+/*
+	Frees the memory allocated to the passed HEKF pointer
+*/
+void destroyHEKF(HEKF* filter) {
+	if(filter != NULL) {
+		free(filter->hTable);
+		free(filter->HTable);
+	}
+	free(filter);
 }
