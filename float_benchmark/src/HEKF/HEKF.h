@@ -2,8 +2,8 @@
 #define HEKF_H
 
 #include <math.h>
-#include "src/Eigen/Eigen337.h"
-#include "src/Eigen/Dense.h"
+#include "../Eigen/Eigen337.h"
+#include "../Eigen/Dense.h"
 #include "Sensors.h"
 using namespace Eigen;
 

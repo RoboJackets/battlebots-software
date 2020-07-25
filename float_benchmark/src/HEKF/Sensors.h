@@ -1,8 +1,8 @@
 #ifndef SENSORS_H
 #define SENSORS_H
 
-#include "src/Eigen/Eigen337.h"
-#include "src/Eigen/Dense.h"
+#include "../Eigen/Eigen337.h"
+#include "../Eigen/Dense.h"
 using namespace Eigen;
 
 //Enum containing sensor types

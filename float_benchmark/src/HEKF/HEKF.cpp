@@ -1,5 +1,5 @@
-#include "src/Eigen/Eigen337.h"
-#include "src/Eigen/Dense.h"
+#include "../Eigen/Eigen337.h"
+#include "../Eigen/Dense.h"
 #include "HEKF.h"
 #include "Sensors.h"
 using namespace Eigen;
@@ -106,7 +106,7 @@ MatrixXf integrate(HEKF* filter, MatrixXf x, mat_matFunc dx, float T) {
 unsigned int updateHEKF(HEKF* filter, Matrix<float, Dynamic, 1> meas, 
 	float input, unsigned long t, Sensor sensor) {
 	//Check to make sure measurement input is correct
-	if(meas.rows() != SENSOR_COUNTS[sensor]) {
+	if((unsigned int)meas.rows() != SENSOR_COUNTS[sensor]) {
 		return 0;
 	}
 

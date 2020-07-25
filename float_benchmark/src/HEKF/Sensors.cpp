@@ -1,6 +1,6 @@
 #include <math.h>
-#include "src/Eigen/Eigen337.h"
-#include "src/Eigen/Dense.h"
+#include "../Eigen/Eigen337.h"
+#include "../Eigen/Dense.h"
 #include "Sensors.h"
 using namespace Eigen;
 
@@ -86,4 +86,5 @@ MatrixXf getR (Sensor s) {
 		case(MAG_X):
 			return MatrixXf::Constant(SENSOR_COUNTS[MAG_X], 1, MAG_VAR);
 	}
+	return MatrixXf::Identity(0, 0);
 }
