@@ -21,7 +21,7 @@ enum Sensor {
 //Number of each sensor, in order of: accelerometer pairs, beacon, magY, magX
 constexpr unsigned int SENSOR_COUNTS[SENSORS] = {6, 1, 1, 1};
 //The distance of each accelerometer pair
-const float ACC_DISTS[SENSOR_COUNTS[ACC]] = {0.1, 0.1, 0.1, 0.1, 0.1, 0.1};
+const float ACC_DISTS[SENSOR_COUNTS[ACC]] = {0.0257, 0.0363, 0.0257, 0.0257, 0.0363, 0.0257};
 
 /*
 	Functions returning the state to observation matricies of each sensor
