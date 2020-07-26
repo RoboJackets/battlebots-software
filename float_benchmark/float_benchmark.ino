@@ -1,6 +1,6 @@
 #include "src/Eigen/Eigen337.h"
 #include "src/Eigen/Dense.h"
-//#include "src/HEKF/HEKF.h"
+#include "src/HEKF/HEKF.h"
 using namespace Eigen;
 
 //Declare benchmarking parameters
@@ -13,7 +13,7 @@ void setup() {
   duration = 5; // Expected time to simulate
 
   updates = duration * tgtFreq; // Number of updates to execute
-
+  
   matMults = 10;
   vecMults = 4 * ((1 / (float)tgtFreq) / dt); // number of matrix by vector multiplications per update
   invs = 1; // number of matrix inversions per update

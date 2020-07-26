@@ -86,4 +86,6 @@ MatrixXf getR (Sensor s) {
 		case(MAG_X):
 			return MatrixXf::Constant(SENSOR_COUNTS[MAG_X], 1, MAG_VAR);
 	}
+	return MatrixXf::Identity(0, 0);
 }
+
