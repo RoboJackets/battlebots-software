@@ -45,4 +45,7 @@ inline float wrapToPi(float x) {
 	return remainder(x, 2 * M_PI);
 }
 
+//Function to free HEKF pointer
+void destroyHEKF(HEKF* filter);
+
 #endif

@@ -45,6 +45,9 @@ using namespace Eigen;
 #define MAGB  39
 #define SRPIN 32
 
+#define MAGTS 5e-6
+
+
 // DEFINE PINS - IR RECVS //
 #define INT10K 23
 #define INT20K 22
@@ -62,6 +65,7 @@ unsigned long tb;
 unsigned long t0;
 volatile HEKF* filter;
 unsigned long microControlPeriod = 625; // 1600 Hz Update Clock or something
+float rightVolt, leftVolt;
 
 // acc variables
 Matrix<int, 6, 1> pairs1;
@@ -120,6 +124,7 @@ const byte acc_reset[2][18] = {
   }
 };
 
+// mag variables
 
 
 
@@ -154,7 +159,7 @@ void setup() {
 
   // set up IR pins
   pinMode(IRSEL, OUTPUT); digitalWrite(IRSEL, LOW);
-  pinMode(
+//  pinMode(
 
   // set up SPI
   SPI.begin();
@@ -187,12 +192,14 @@ void setup() {
   }
 
   // set up ACC interrupts using DATA_READY ACC signal
-  attachInterrupt(INT1A, acc1ISR); SPI.usingInterrupt(INT1A);
-  attachInterrupt(INT2A, acc2ISR); SPI.usingInterrupt(INT2A);
-  attachInterrupt(INT3A, acc3ISR); SPI.usingInterrupt(INT3A);
-  attachInterrupt(INT4A, acc4ISR); SPI.usingInterrupt(INT4A);
+  attachInterrupt(INT1A, acc1ISR, RISING); SPI.usingInterrupt(INT1A);
+  attachInterrupt(INT2A, acc2ISR, RISING); SPI.usingInterrupt(INT2A);
+  attachInterrupt(INT3A, acc3ISR, RISING); SPI.usingInterrupt(INT3A);
+  attachInterrupt(INT4A, acc4ISR, RISING); SPI.usingInterrupt(INT4A);
 
-  
+  // init motor voltages
+  rightVolt = 0;
+  leftVolt = 0;
   
 }
 
@@ -200,7 +207,7 @@ void setup() {
 
 void loop() {
   noInterrupts();
-  t0 = micros();
+  ta = micros();
 
   // pull acc data if not done by interrupts
   int pin;
@@ -236,22 +243,22 @@ void loop() {
     idx1 = pairs1(k, 0);
     idx2 = pairs2(k, 0);
     centGuess2 = accReadingsX(idx2, 0) * centproj2x(k, 0) + accReadingsY(idx2, 0) * centproj2y(k, 0);
-    centGuess1 = accReadingsX(idx1, 0) * centproj1x(k, 0) + accReadingsY(idx1, 0) * centproj1x(k, 0):
+    centGuess1 = accReadingsX(idx1, 0) * centproj1x(k, 0) + accReadingsY(idx1, 0) * centproj1x(k, 0);
     centGuess(k, 0) = centGuess2 - centGuess1;
   }
   centGuess.cwiseAbs();
   
   // filter acc data
-  
-  
-  
-  
+  float spinVolt = (leftVolt + rightVolt) / 2;
+  updateHEKF(filter, centGuess, spinVolt, ta-t0, ACC);
 
-  // control algorithm goes here
+  // controls go here ok use filter->x or something idk
 
-  t1 = micros();
+  tb = micros();
   interrupts();
-  delayMicroseconds(microControlPeriod - (t1 - t0)); 
+  if(microControlPeriod > (tb - ta)) { // pls pls pls never be false lol
+    delayMicroseconds(microControlPeriod - (tb - ta)); 
+  }
 }
 
 // ISRs // 
@@ -280,7 +287,13 @@ void acc4ISR() {
   accReadingsZ(3, 0) = readAcc(3, ZAXIS);  
 }
 
+void magISR() {
+  
+}
+
 // Helpers //
+
+VectorXf magfiltfilt(int taps, VectorXf b, VectorXf a, VectorXf sig, 
 
 void writeAcc(byte numAcc, const byte address[], const byte data[], int numWrites) {
   int pin;
