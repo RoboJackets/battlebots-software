@@ -57,6 +57,9 @@ using namespace Eigen;
 #define REF20K 19
 #define IRSEL  37
 
+void writeAcc(byte , const byte [], const byte [], int );
+float readAcc(byte , byte );
+
 SPISettings hockiSPISettings(SPIRATE, MSBFIRST, SPI_MODE3);
 
 // control variables
@@ -292,8 +295,6 @@ void magISR() {
 }
 
 // Helpers //
-
-VectorXf magfiltfilt(int taps, VectorXf b, VectorXf a, VectorXf sig, 
 
 void writeAcc(byte numAcc, const byte address[], const byte data[], int numWrites) {
   int pin;
