@@ -25,6 +25,7 @@ typedef struct hekf {
 
 	void_matFunc hTable[SENSORS];	//Array of state to observation matricies function pointers
 	void_matFunc HTable[SENSORS];	//Array of state to observation Jacobians function pointers
+	MatrixXf RTable[SENSORS];		//Array of sensor covariance matricies
 
 	Matrix<float, 2, 2> P;			//State covariance
 	Matrix<float, 2, 2> Q;			//Process noise covariance
@@ -47,5 +48,11 @@ inline float wrapToPi(float x) {
 
 //Function to free HEKF pointer
 void destroyHEKF(HEKF* filter);
+
+//Function to kill a malfunctioning sensor
+unsigned int killSensor(HEKF* filter, Sensor sensor, unsigned int idx);
+
+//Function to revive a sensor
+unsigned int reviveSensor(HEKF* filter, Sensor sensor, unsigned int idx);
 
 #endif

@@ -47,12 +47,4 @@ MatrixXf beacon_H (Matrix<float, 2, 1> x);
 MatrixXf magy_H (Matrix<float, 2, 1> x, float BMag);
 MatrixXf magx_H (Matrix<float, 2, 1> x, float BMag);
 
-/*
-	Function returning the sensor noise covariance for each sensor
-	Parameters:
-		s: Sensor to get
-	Return: noise covariance
-*/
-MatrixXf getR (Sensor s);
-
 #endif

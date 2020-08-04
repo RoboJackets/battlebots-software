@@ -75,17 +75,3 @@ MatrixXf magx_H (Matrix<float, 2, 1> x, float BMag) {
 	return H;
 }
 
-MatrixXf getR (Sensor s) {
-	switch(s) {
-		case(ACC):
-			return MatrixXf::Identity(SENSOR_COUNTS[ACC], SENSOR_COUNTS[ACC]) * ACC_VAR;
-		case(BEACON):
-			return MatrixXf::Constant(SENSOR_COUNTS[BEACON], 1, BEACON_VAR);
-		case(MAG_Y):
-			return MatrixXf::Constant(SENSOR_COUNTS[MAG_Y], 1, MAG_VAR);
-		case(MAG_X):
-			return MatrixXf::Constant(SENSOR_COUNTS[MAG_X], 1, MAG_VAR);
-	}
-	return MatrixXf::Identity(0, 0);
-}
-

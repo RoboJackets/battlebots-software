@@ -2,6 +2,7 @@
 #include "../Eigen/Dense.h"
 #include "HEKF.h"
 #include "Sensors.h"
+#include <limits>
 using namespace Eigen;
 
 
@@ -19,8 +20,8 @@ using namespace Eigen;
 	returned pointer is not NULL
 */
 HEKF* initHEKF(float dt, float alpha, float beta, float wheelR, float botR) {
-	HEKF* filter = (HEKF*) malloc(sizeof(HEKF));				//Allocate space
-	if (filter == NULL) {										//Handle malloc failure
+	HEKF* filter = (HEKF*) malloc(sizeof(HEKF));		//Allocate space
+	if (filter == NULL) {								//Handle malloc failure
 		return filter;
 	}
 	filter->dt = dt;								
@@ -29,25 +30,34 @@ HEKF* initHEKF(float dt, float alpha, float beta, float wheelR, float botR) {
 			     0, -alpha;
     filter->B << 0, 
                  wheelR * beta / botR;
-    filter->x << 0, 0;											//Initial state estimate
-    filter->u = 0;												//Initial input to system
+    filter->x << 0, 0;									//Initial state estimate
+    filter->u = 0;										//Initial input to system
 
-    void_matFunc hInitializer[SENSORS] = {						//Initialize hTable function pointers
+    //Initialize hTable function pointers
+    void_matFunc hInitializer[SENSORS] = {
     	(void_matFunc)&acc_h, 
     	(void_matFunc)&beacon_h,
 		(void_matFunc)&magy_h,
 		(void_matFunc)&magx_h
     };
     memcpy(filter->hTable, hInitializer, sizeof(hInitializer));
-    void_matFunc HInitializer[SENSORS] = {						//Initialize HTable function pointers
+
+    //Initialize HTable function pointers
+    void_matFunc HInitializer[SENSORS] = {
     	(void_matFunc)&acc_H,
     	(void_matFunc)&beacon_H,
 		(void_matFunc)&magy_H,
 		(void_matFunc)&magx_H
     };
-    memcpy(filter->HTable, HInitializer, sizeof(HInitializer));
+    memcpy(filter->HTable, HInitializer, sizeof(HInitializer));	
 
-    filter->P << ANGLE_VAR, 0,									//Covariance of angular velocity is 0
+    //Initialize RTable Values
+    filter->RTable[0] = MatrixXf::Identity(SENSOR_COUNTS[ACC], SENSOR_COUNTS[ACC]) * ACC_VAR;
+    filter->RTable[1] = MatrixXf::Constant(SENSOR_COUNTS[BEACON], 1, BEACON_VAR);
+    filter->RTable[2] = MatrixXf::Constant(SENSOR_COUNTS[MAG_Y], 1, MAG_VAR);
+    filter->RTable[3] = MatrixXf::Constant(SENSOR_COUNTS[MAG_X], 1, MAG_VAR);
+
+    filter->P << ANGLE_VAR, 0,							//Covariance of angular velocity is 0
     			 0, 0;
    	filter->Q << PROCESS_VAR, 0,
    	             0, PROCESS_VAR;
@@ -139,7 +149,7 @@ unsigned int updateHEKF(HEKF* filter, Matrix<float, Dynamic, 1> meas,
 				(filter->HTable[sensor]))(filter->x, BMag);
 			break;
 	}
-	MatrixXf Rk = getR(sensor);							 	//Select corresponding sensor covariances						
+	MatrixXf Rk = filter->RTable[sensor];					//Select corresponding sensor covariances						
 	Matrix<float, 2, 2> K = filter->P * Hk.transpose() * 	//Calculate kalman gain
 		(Hk * filter->P * Hk.transpose() + Rk).inverse();
 	MatrixXf err = meas - hk;								//Difference between true measurement and expected measurement
@@ -158,6 +168,8 @@ unsigned int updateHEKF(HEKF* filter, Matrix<float, Dynamic, 1> meas,
 
 /*
 	Frees the memory allocated to the passed HEKF pointer
+	Parameters:
+		filter: pointer to the HEKF to free
 */
 void destroyHEKF(HEKF* filter) {
 	if(filter != NULL) {
@@ -165,4 +177,49 @@ void destroyHEKF(HEKF* filter) {
 		free(filter->HTable);
 	}
 	free(filter);
+}
+
+/*
+	Kills a sensor
+	Parameters:
+		filter: pointer to the HEKF
+		sensor: sensor type to kill
+		idx: index of the sensor type to kill
+	Return: whether the sensor was successfully killed (1: successful, 0: failure)
+*/
+unsigned int killSensor(HEKF* filter, Sensor sensor, unsigned int idx) {
+	if(idx >= SENSOR_COUNTS[sensor]) {
+		return 0;
+	}
+	(filter->RTable[sensor])(idx, idx) = std::numeric_limits<float>::max();
+	return 1;
+}
+
+/*
+	Revives a sensor
+	Parameters:
+		filter: pointer to the HEKF
+		sensor: sensor type to revive
+		idx: index of the sensor type to revive
+	Return: whether the sensor was successfully killed (1: successful, 0: failure)
+*/
+unsigned int reviveSensor(HEKF* filter, Sensor sensor, unsigned int idx) {
+	if(idx >= SENSOR_COUNTS[sensor]) {
+		return 0;
+	}
+	float covariance;
+	switch(sensor) {
+		case ACC:
+			covariance = ACC_VAR;
+			break;
+		case BEACON:
+			covariance = BEACON_VAR;
+			break;
+		case MAG_Y:
+		case MAG_X:
+			covariance = MAG_VAR;
+			break;
+	}
+	(filter->RTable[sensor])(idx, idx) = covariance;
+	return 1;
 }
