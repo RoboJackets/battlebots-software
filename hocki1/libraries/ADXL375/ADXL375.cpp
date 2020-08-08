@@ -2,17 +2,20 @@
 #include "ADXL375.h"
 #include "SPI.h"
 
-ADXL375::ADXL375()
+ADXL375::ADXL375(uint8_t cs_pin, uint8_t int1_pin, uint8_t int2_pin, int spi_rate)
 {
+    _cs_pin = cs_pin;
+    _int1_pin = int1_pin;
+    _int2_pin = int2_pin; 
+    SPISettings spi_settings(spi_rate, MSBFIRST, SPI_MODE3);
+    *_spi_settings = spi_settings;
 }
 
 void ADXL375::init()
 {
-  SPI.begin();
-  SPI.setDataMode(SPI_MODE3); 
   
-  pinMode(PIN_SPI_SS, OUTPUT);
-  digitalWrite(PIN_SPI_SS, HIGH);
+  pinMode(_cs_pin, OUTPUT);
+  digitalWrite(_cs_pin, HIGH);
 
   // set the data sampling rate to 3200Hz
   setDataRate(0b00001111);
@@ -20,6 +23,7 @@ void ADXL375::init()
 
 void ADXL375::startMeasuring()
 {
+  writeRegister(ADXL375_REG_DATA_FORMAT, 0x0B);
   writeRegister(ADXL375_REG_POWER_CTL, 0x08);
 }
 
@@ -64,6 +68,34 @@ uint8_t ADXL375::getFIFOBufferSize()
   return readRegister(ADXL375_REG_FIFO_STATUS) & 0b00111111;
 }
 
+void ADXL375::startContinuousOperation(float ofsx, float ofxy, float ofsz) {
+    
+    setFIFOMode(ADXL375_FIFO_MODE_BYPASS);
+
+    // DATA_READY -> INT 1
+    // OVERRUN -> INT 2
+    writeRegister(ADXL375_REG_INT_ENABLE, 0b10000001);
+    writeRegister(ADXL375_REG_INT_MAP, 0b00000001);
+
+    int8_t ofsx_i = (int8) ((ofsx / 9.81) / 0.197); 
+    int8_t ofsy_i = (int8) ((ofsy / 9.81) / 0.197); 
+    int8_t ofsz_i = (int8) ((ofsz / 9.81) / 0.197);
+
+    writeRegister(ADXL375_REG_OFSX, (uint8_t) ofsx_i);
+    writeRegister(ADXL375_REG_OFSY, (uint8_t) ofsy_i);
+    writeRegister(ADXL375_REG_OFSZ, (uint8_t) ofsz_i);
+
+    startMeasuring();
+}
+
+void activateSelfTest() {
+    writeRegister(ADXL375_REG_DATA_FORMAT, 0x8B); // set D7 high   
+}
+
+void deactivateSelfTest() {
+    startMeasuring(); // set D7 low
+}
+
 void ADXL375::startShockDetection()
 {
   setShockAxes(true,true,true);
@@ -80,6 +112,27 @@ void ADXL375::startShockDetection()
   writeRegister(ADXL375_REG_INT_ENABLE, intEnable | 0b01000000);
 
   startMeasuring();
+}
+
+void stop() {
+    writeRegister(ADXL375_REG_THRESH_SHOCK, 0x00);
+    writeRegister(ADXL375_REG_OFSX, 0x00);
+    writeRegister(ADXL375_REG_OFSY, 0x00);
+    writeRegister(ADXL375_REG_OFSZ, 0x00);
+    writeRegister(ADXL375_REG_DUR, 0x00);
+    writeRegister(ADXL375_REG_LATENT, 0x00);
+    writeRegister(ADXL375_REG_WINDOW, 0x00);
+    writeRegister(ADXL375_REG_THRESH_ACT, 0x00);
+    writeRegister(ADXL375_REG_THRESH_INACT, 0x00);
+    writeRegister(ADXL375_REG_TIME_INACT, 0x00);
+    writeRegister(ADXL375_REG_ACT_INACT_CTL, 0x00);
+    writeRegister(ADXL375_REG_SHOCK_AXES, 0x00);
+    writeRegister(ADXL375_REG_BW_RATE, 0x0A);
+    writeRegister(ADXL375_REG_POWER_CTL, 0x00);
+    writeRegister(ADXL375_REG_INT_ENABLE, 0x00);
+    writeRegister(ADXL375_REG_INT_MAP, 0x00);
+    writeRegister(ADXL375_REG_DATA_FORMAT, 0x00);
+    writeRegister(ADXL375_REG_FIFO_CTL, 0x00);
 }
 
 void ADXL375::setShockAxes(bool x, bool y, bool z)
@@ -108,8 +161,9 @@ void ADXL375::_multiReadRegister(uint8_t regAddress, uint8_t values[], uint8_t n
     regAddress |= 0x40;
   }
   
+  SPI.beginTransaction(*_spi_settings);
   // set the Chip select pin low to start an SPI packet.
-  digitalWrite(PIN_SPI_SS, LOW);
+  digitalWrite(_cs_pin, LOW);
   // transfer the starting register address that needs to be read.
   SPI.transfer(regAddress);
   
@@ -119,18 +173,21 @@ void ADXL375::_multiReadRegister(uint8_t regAddress, uint8_t values[], uint8_t n
   }
 
   //Set the Chips Select pin high to end the SPI packet.
-  digitalWrite(PIN_SPI_SS, HIGH);
+  digitalWrite(_cs_pin, HIGH);
+  SPI.endTransaction();
 }
 
 void ADXL375::writeRegister(uint8_t regAddress, uint8_t value)
 {
+  SPI.beginTransaction(*_spi_settings);
     //Set Chip Select pin low to signal the beginning of an SPI packet.
-  digitalWrite(PIN_SPI_SS, LOW);
+  digitalWrite(_cs_pin, LOW);
   //Transfer the register address over SPI.
   SPI.transfer(regAddress);
   //Transfer the desired register value over SPI.
   SPI.transfer(value);
   //Set the Chip Select pin high to signal the end of an SPI packet.
-  digitalWrite(PIN_SPI_SS, HIGH);
+  digitalWrite(_cs_pin, HIGH);
+  SPI.endTransaction();
 }
 

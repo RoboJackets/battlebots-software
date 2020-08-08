@@ -49,7 +49,11 @@
 class ADXL375
 {
   public:
-    ADXL375();
+    uint8_t _cs_pin;
+    uint8_t _int1_pin;
+    uint8_t _int2_pin;
+    SPISettings *_spi_settings;
+    ADXL375(uint8_t cs_pin, uint8_t int1_pin, uint8_t int2_pin, int spi_rate);
     void init();
     void startMeasuring();
     AccelReading getXYZ();
@@ -58,6 +62,12 @@ class ADXL375
     void setShockThreshold(uint8_t shockThreshold);
     void setShockAxes(bool x = true, bool y = true, bool z = true);
     void startShockDetection();
+    void startContinuousOperation(float ofsx = 0, float ofsy = 0, float ofsz = 0);
+    void activateSelfTest();
+    void deactivateSelfTest();
+    void stop();
+    bool readInt1();
+    bool readInt2();
     void setDataRate(uint8_t rate);
     uint8_t getFIFOBufferSize();
     void setFIFOMode(uint8_t mode, uint8_t trigger = 0, uint8_t samples = 0);
