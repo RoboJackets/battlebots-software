@@ -50,7 +50,7 @@ void setup() {
 
   // begin accelerometers
   accbank = new AccBank();
-  (*accbank).begin();
+  accbank->begin();
 
   // begin "motors"
   leftV = 0;
@@ -64,7 +64,7 @@ void setup() {
 void control() {
 
   float spinV = (leftV + rightV) / 2;
-  updateHEKF(filter, (*accbank).getCentMeas(), spinV, hekfClock, ACC);
+  updateHEKF(filter, accbank->getCentMeas(), spinV, hekfClock, ACC);
   
 }
 
