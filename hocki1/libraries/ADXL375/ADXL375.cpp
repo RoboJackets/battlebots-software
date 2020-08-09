@@ -11,6 +11,10 @@ ADXL375::ADXL375(uint8_t cs_pin, uint8_t int1_pin, uint8_t int2_pin, int spi_rat
     *_spi_settings = spi_settings;
 }
 
+ADXL375::~ADXL375() {
+    free(_spi_settings);
+}
+
 void ADXL375::init()
 {
   
@@ -88,12 +92,12 @@ void ADXL375::startContinuousOperation(float ofsx, float ofxy, float ofsz) {
     startMeasuring();
 }
 
-void activateSelfTest() {
+void ADXL375::activateSelfTest() {
     writeRegister(ADXL375_REG_DATA_FORMAT, 0x8B); // set D7 high   
 }
 
-void deactivateSelfTest() {
-    startMeasuring(); // set D7 low
+void ADXL375::deactivateSelfTest() {
+    writeRegister(ADXL375_REG_DATA_FORMAT, 0x0B); // set D7 low   
 }
 
 void ADXL375::startShockDetection()
@@ -114,7 +118,7 @@ void ADXL375::startShockDetection()
   startMeasuring();
 }
 
-void stop() {
+void ADXL375::stop() {
     writeRegister(ADXL375_REG_THRESH_SHOCK, 0x00);
     writeRegister(ADXL375_REG_OFSX, 0x00);
     writeRegister(ADXL375_REG_OFSY, 0x00);

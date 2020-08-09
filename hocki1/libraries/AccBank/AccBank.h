@@ -48,16 +48,19 @@ class AccBank {
         Matrix<float, 6, 1> centproj2y;
         Matrix<float, 6, 1> centproj2x; 
         
-
         AccBank();
+        ~AccBank();
 
         void begin();
         void killAcc(HEKF* filter, uint8_t accNum);
         void reviveAcc(HEKF* filter, uint8_t accNum);
-        float[6] getCentMeas();
+        void toggleSelfTest();
+        Matrix<float, 6, 1> getCentMeas();
+        Matrix<float, 4, 1> getXMeas();
+        Matrix<float, 4, 1> getYMeas();
+        Matrix<float, 4, 1> getZMeas();
+        Matrix<float, 4, 3> getAllMeas(); 
 
-        
-
-}
+};
 
 #endif

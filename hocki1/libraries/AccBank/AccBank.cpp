@@ -51,17 +51,108 @@ AccBank::AccBank() {
     accs[2] = ADXL375(CS3, INT3A, INT3B, SPI_RATE);
     accs[3] = ADXL375(CS4, INT4A, INT4B, SPI_RATE);
 
+}
+
+AccBank::~AccBank() {
+    delete[] pairs1;
+    delete[] pairs2;
+    delete[] accangs;
+    delete[] pairsdists;
+    delete[] pairsangs;
+    for(uint8_t k = 0; k < 4; k++) {
+        delete accs[k];
+    }
+}
+
+void AccBank::begin() {
     for(uint8_t k = 0; k < 4; k++) 
         accs[k].init();
         accs[k].startContinuousOperation(ofxs[k], ofsy[k], ofsz[k]);
     }
+}
 
+void AccBank::killAcc(HEKF* filter, uint8_t accNum) {
+    for(uint8_t k = 0; k < 6; k++) {
+        if(pairs1[k] == accNum || pairs2[k] == accNum) {
+            killSensor(filter, ACC, k);
+        }
+    }
+}
 
+void AccBank::reviveAcc(HEKF* filter, uint8_t accNum) {
+    for(uint8_t k = 0; k < 6; k++) {
+        if(pairs1[k] == accNum || pairs2[k] == accNum) {
+            reviveSensor(filter, ACC, k);
+        }
+    }
+}
 
+void toggleSelfTest() {
+    if(self_testing) {
+        self_testing = !self_testing;
+        for(uint8_t k = 0; k < 4; k++) {
+            accs[k].deactivateSelfTest();
+        }
+    }
+    else {
+        self_testing = !self_testing;
+        for(uint8_t k = 0; k < 4; k++) {
+            accs[k].activateSelfTest();
+        }
+    }
+}
 
+Matrix<float, 4, 3> AccBank::getAllMeas() {
+    Matrix<float, 4, 3> ret;
+    AccelReading readk
+    for(uint8_t k = 0; k < 4; k++) {
+        readk = accs[k].getXYZ();
+        ret(k, 0) = readk.x * GRAVITY_FORCE * MG_TO_G_CONV;
+        ret(k, 1) = readk.y * GRAVITY_FORCE * MG_TO_G_CONV;
+        ret(k, 2) = readk.z * GRAVITY_FORCE * MG_TO_G_CONV;
+    }
+    return ret;
+}
 
+Matrix<float, 4, 1> AccBank::getXMeas() {
+    Matrix<float, 4, 1> ret;
+    Matrix<float, 4, 3> allret = getAllMeas();
+    for(uint8_t k = 0; k < 4; k++) {
+        ret(k, 0) = allret(k, 0);
+    }
+    return ret;
+}
 
-    
-    
+Matrix<float, 4, 1> AccBank::getYMeas() {
+    Matrix<float, 4, 1> ret;
+    Matrix<float, 4, 3> allret = getAllMeas();
+    for(uint8_t k = 0; k < 4; k++) {
+        ret(k, 0) = allret(k, 1);
+    }
+    return ret;
+}
 
+Matrix<float, 4, 1> AccBank::getZMeas() {
+    Matrix<float, 4, 1> ret;
+    Matrix<float, 4, 3> allret = getAllMeas();
+    for(uint8_t k = 0; k < 4; k++) {
+        ret(k, 0) = allret(k, 2);
+    }
+    return ret;
+}
+
+Matrix<float, 6, 1> AccBank::getCentMeas() {
+    Matrix<float, 6, 1> ret;
+    Matrix<float, 4, 3> allret = getAllMeas();
+    uint8_t idx1, idx2;
+    float cg1, cg2;
+    for(uint8_t k = 0, k < 6; k++) {
+        idx1 = pairs1(k, 0);
+        idx2 = pairs2(k, 0);
+        cg1 = allret(idx1, 0) * centproj1x(k, 0) + allret(idx1, 1) * centproj1y(k, 0);
+        cg2 = allret(idx2, 0) * centproj2x(k, 0) + allret(idx2, 1) * centproj2y(k, 0);
+        ret(k, 0) = cg2 - cg1;
+    }
+    ret.cwiseAbs();
+    return ret;
 }
