@@ -4,6 +4,7 @@
 #include "libraries/ADXL375/ADXL375.h"
 #include "libraries/ADXL375/AccelReading.h"
 #include "libraries/AccBank/AccBank.h"
+#include "libraries/Telemetry/Telemetry.h"
 #include "SPI.h"
 using namespace Eigen;
 
@@ -36,6 +37,7 @@ unsigned long tb;
 unsigned long t0;
 HEKF *filter;
 AccBank *accbank;
+Telemetry *telem;
 elapsedMicros controlTimer;
 elapsedMicros hekfClock;
 float leftV, rightV;
@@ -52,6 +54,9 @@ void setup() {
   accbank = new AccBank();
   accbank->begin();
 
+  // begin telemetry
+  telem = new Telemetry();
+
   // begin "motors"
   leftV = 0;
   rightV = 0;
@@ -64,7 +69,9 @@ void setup() {
 void control() {
 
   float spinV = (leftV + rightV) / 2;
-  updateHEKF(filter, accbank->getCentMeas(), spinV, hekfClock, ACC);
+  Matrix<float, 6, 1> accMeas = accbank->getCentMeas();
+  updateHEKF(filter, accMeas, spinV, hekfClock, ACC);
+  telem->writeTelem(hekfClock, accMeas, ACCC_TELEM);
   
 }
 
