@@ -71,7 +71,7 @@ void control() {
   float spinV = (leftV + rightV) / 2;
   Matrix<float, 6, 1> accMeas = accbank->getCentMeas();
   updateHEKF(filter, accMeas, spinV, hekfClock, ACC);
-  telem->writeTelem(hekfClock, accMeas, ACCC_TELEM);
+  telem->writeData(hekfClock, accMeas, ACCC_TELEM);
   
 }
 

@@ -29,8 +29,8 @@ class Telemetry {
         Telemetry();
         ~Telemetry();
 
-        uint8_t writeTelem(unsigned long time_us, Matrix<float, -1, 1> data, uint8_t telem_type);
-
+        uint8_t writeData(unsigned long time_us, Matrix<float, -1, 1> data, uint8_t telem_type);
+        uint8_t writeMsg(unsigned long time_us, String msg, uint8_t telem_type);
 };
 
 
