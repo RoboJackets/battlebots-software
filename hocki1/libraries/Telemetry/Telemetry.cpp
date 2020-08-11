@@ -31,7 +31,15 @@ Telemetry::Telemetry() {
         dirN = tmp > dirN ? tmp : dirN;
     }
     dirN += 1;
-    dir = "TELEM" + String(dirN);
+    if(dirN < 10) {
+        dir = "TELEM00" + String(dirN);
+    }
+    else if(dirN < 100) {
+        dir = "TELEM0" + String(dirN);
+    }
+    else {
+        dir = "TELEM" + String(dirN);
+    }
     SD.mkdir(dir);
     Serial.println("Making root dir: " + dir);
 }
@@ -67,6 +75,9 @@ uint8_t Telemetry::writeData(unsigned long time_us, Matrix<float, -1, 1> data, u
         case MOTOR_TELEM:
             fname += "MOTOR.csv";
             break;
+        case HEKF_TELEM:
+            fname += "HEKF.csv";
+            break;        
         case MISC_TELEM:
             fname += "MISC.csv"
             break;
@@ -122,6 +133,9 @@ uint8_t Telemetry::writeMsg(unsigned long time_us, String msg, uint8_t telem_typ
             break;
         case MOTOR_TELEM:
             fname += "MOTOR.csv";
+            break;
+        case HEKF_TELEM:
+            fname += "HEKF.csv";
             break;
         case MISC_TELEM:
             fname += "MISC.csv"

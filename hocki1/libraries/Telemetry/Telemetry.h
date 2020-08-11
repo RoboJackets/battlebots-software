@@ -18,6 +18,8 @@
 
 #define MOTOR_TELEM 8
 
+#define HEKF_TELEM  15
+
 #define MISC_TELEM  20
 
 
