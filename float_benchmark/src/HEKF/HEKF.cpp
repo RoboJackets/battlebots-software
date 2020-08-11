@@ -3,6 +3,8 @@
 #include "HEKF.h"
 #include "Sensors.h"
 #include <limits>
+#include <math.h>
+#include <iostream>
 using namespace Eigen;
 
 
@@ -34,7 +36,7 @@ HEKF* initHEKF(float dt, float alpha, float beta, float wheelR, float botR) {
     filter->u = 0;										//Initial input to system
 
     //Initialize hTable function pointers
-    void_matFunc hInitializer[SENSORS] = {
+    void_matFunc hInitializer[SENSOR_TYPES] = {
     	(void_matFunc)&acc_h, 
     	(void_matFunc)&beacon_h,
 		(void_matFunc)&magy_h,
@@ -43,19 +45,22 @@ HEKF* initHEKF(float dt, float alpha, float beta, float wheelR, float botR) {
     memcpy(filter->hTable, hInitializer, sizeof(hInitializer));
 
     //Initialize HTable function pointers
-    void_matFunc HInitializer[SENSORS] = {
+    void_matFunc HInitializer[SENSOR_TYPES] = {
     	(void_matFunc)&acc_H,
     	(void_matFunc)&beacon_H,
 		(void_matFunc)&magy_H,
 		(void_matFunc)&magx_H
     };
-    memcpy(filter->HTable, HInitializer, sizeof(HInitializer));	
+    memcpy(filter->HTable, HInitializer, sizeof(HInitializer));
 
     //Initialize RTable Values
-    filter->RTable[0] = MatrixXf::Identity(SENSOR_COUNTS[ACC], SENSOR_COUNTS[ACC]) * ACC_VAR;
-    filter->RTable[1] = MatrixXf::Constant(SENSOR_COUNTS[BEACON], 1, BEACON_VAR);
-    filter->RTable[2] = MatrixXf::Constant(SENSOR_COUNTS[MAG_Y], 1, MAG_VAR);
-    filter->RTable[3] = MatrixXf::Constant(SENSOR_COUNTS[MAG_X], 1, MAG_VAR);
+    filter->RTable[0] = MatrixXf::Identity(SENSOR_COUNTS[ACC], SENSOR_COUNTS[ACC]) * SENSOR_VARS[ACC];
+    filter->RTable[1] = MatrixXf::Constant(SENSOR_COUNTS[BEACON], 1, SENSOR_VARS[BEACON]);
+    filter->RTable[2] = MatrixXf::Constant(SENSOR_COUNTS[MAG_Y], 1, SENSOR_VARS[MAG_Y]);
+    filter->RTable[3] = MatrixXf::Constant(SENSOR_COUNTS[MAG_X], 1, SENSOR_VARS[MAG_X]);
+
+    //Initialize variable sensor data
+    filter->sData = initSensorData();
 
     filter->P << ANGLE_VAR, 0,							//Covariance of angular velocity is 0
     			 0, 0;
@@ -130,39 +135,37 @@ unsigned int updateHEKF(HEKF* filter, Matrix<float, Dynamic, 1> meas,
 	filter->P = integrate(filter, filter->P, &PDot, T);	//Integrate state covariance
 
 	//Update step
-	MatrixXf hk;		//Value of expected measurement for given state
-	MatrixXf Hk;		//Jacobian of hk
-	switch(sensor) {	//Evaluate h/Hk for the selected sensor
+	MatrixXf hk;										//Value of expected measurement for given state
+	MatrixXf Hk;										//Jacobian of hk
+	switch(sensor) {									//Evaluate h/Hk for the selected sensor
 		case(ACC):
 		case(BEACON):	
-			hk = ((MatrixXf (*)(Matrix<float, 2, 1>))	//cast generic function pointer to specific function
-				(filter->hTable[sensor]))(filter->x);	//pointer based on the selected sensor and evaluate
-			Hk = ((MatrixXf (*)(Matrix<float, 2, 1>))
-				(filter->HTable[sensor]))(filter->x);
+			hk = ((MatrixXf (*)(HEKF*))(filter->hTable[sensor]))(filter);
+			Hk = ((MatrixXf (*)(HEKF*))(filter->HTable[sensor]))(filter);
 			break;
 		case(MAG_Y):
 		case(MAG_X):
 			float BMag = meas(SENSOR_COUNTS[MAG_X]);
-			hk = ((MatrixXf (*)(Matrix<float, 2, 1>, float))
-				(filter->hTable[sensor]))(filter->x, BMag);
-			Hk = ((MatrixXf (*)(Matrix<float, 2, 1>, float))
-				(filter->HTable[sensor]))(filter->x, BMag);
+			hk = ((MatrixXf (*)(HEKF*, float))(filter->hTable[sensor]))(filter, BMag);
+			Hk = ((MatrixXf (*)(HEKF*, float))(filter->HTable[sensor]))(filter, BMag);
 			break;
 	}
-	MatrixXf Rk = filter->RTable[sensor];					//Select corresponding sensor covariances						
-	Matrix<float, 2, 2> K = filter->P * Hk.transpose() * 	//Calculate kalman gain
+	MatrixXf Rk = filter->RTable[sensor];							//Select corresponding sensor covariances						
+	Matrix<float, 2, 2> K = filter->P * Hk.transpose() * 			//Calculate kalman gain
 		(Hk * filter->P * Hk.transpose() + Rk).inverse();
-	MatrixXf err = meas - hk;								//Difference between true measurement and expected measurement
-	if(sensor == BEACON) {									//If using beacon, error should be wrapped to (-pi, pi)
+	MatrixXf err = meas - hk;										//Difference between true measurement and expected measurement
+	if(sensor == BEACON) {											//If using beacon, error should be wrapped to (-pi, pi)
 		err(0) = wrapToPi(err(0));
 	}
+	std::cout << err << std::endl;
+	updateErrCounts(filter, err, sensor);							//Update error counters for sensor and kill/revive sensor accordingly
 	filter->x = filter->x + K * err;								//Update state
 	filter->P = (MatrixXf::Identity(2, 2) - K * Hk) * filter->P * 	//Update covariance
 				(MatrixXf::Identity(2, 2) - K * Hk).transpose() + K * Rk * K.transpose();
 
 	//Update values		
-	(filter->x)(0) = wrapToPi((filter->x)(0));	//Constrain position to range (-pi, pi)
-	filter->tUpdate = t;						//Set time of last update to current time
+	(filter->x)(0) = wrapToPi((filter->x)(0));						//Constrain position to range (-pi, pi)
+	filter->tUpdate = t;											//Set time of last update to current time
 	return 1;
 }
 
@@ -175,6 +178,7 @@ void destroyHEKF(HEKF* filter) {
 	if(filter != NULL) {
 		free(filter->hTable);
 		free(filter->HTable);
+		destroySensorData(filter->sData);
 	}
 	free(filter);
 }
@@ -201,25 +205,108 @@ unsigned int killSensor(HEKF* filter, Sensor sensor, unsigned int idx) {
 		filter: pointer to the HEKF
 		sensor: sensor type to revive
 		idx: index of the sensor type to revive
-	Return: whether the sensor was successfully killed (1: successful, 0: failure)
+	Return: whether the sensor was successfully revived (1: successful, 0: failure)
 */
 unsigned int reviveSensor(HEKF* filter, Sensor sensor, unsigned int idx) {
 	if(idx >= SENSOR_COUNTS[sensor]) {
 		return 0;
 	}
-	float covariance;
-	switch(sensor) {
-		case ACC:
-			covariance = ACC_VAR;
-			break;
-		case BEACON:
-			covariance = BEACON_VAR;
-			break;
-		case MAG_Y:
-		case MAG_X:
-			covariance = MAG_VAR;
-			break;
-	}
-	(filter->RTable[sensor])(idx, idx) = covariance;
+	(filter->RTable[sensor])(idx, idx) = SENSOR_VARS[sensor];
 	return 1;
+}
+
+/*
+	Updates the error counter for a sensor
+	Parameters:
+		filter: the filter to update
+		error: The error of the sensor types (as a column vector)
+		sensor: sensor type to update
+*/
+void updateErrCounts(HEKF* filter, MatrixXf error, Sensor sensor) {
+	for(unsigned int i = 0; i < SENSOR_COUNTS[sensor]; i++) {
+		unsigned int* ptr = filter->sData->errCount[sensor] + i;
+		unsigned int prev = *ptr;
+		unsigned int next;
+		if(abs(error(i)) > SENSOR_ERROR_LIMIT[sensor]) {
+			next = ++(*ptr);
+		} else {
+			next = --(*ptr);
+		}
+		if(prev < SENSOR_ERROR_H[sensor] && next >= SENSOR_ERROR_H[sensor]) {
+			killSensor(filter, sensor, i);
+		} else if (prev > SENSOR_ERROR_L[sensor] && next <= SENSOR_ERROR_L[sensor]) {
+			reviveSensor(filter, sensor, i);
+		}
+	}
+}
+
+//These functions calculate various sensor-related values
+//See Sensors.h for further description
+
+MatrixXf acc_h (HEKF* filter) {
+	Matrix<float, SENSOR_COUNTS[ACC], 1> h;
+	for(unsigned int i = 0; i < SENSOR_COUNTS[ACC]; i++) {
+		h(i) = pow(filter->x(1), 2) * ACC_DISTS[i];
+	}
+	return h;
+}
+
+MatrixXf beacon_h (HEKF* filter) {
+	Matrix<float, SENSOR_COUNTS[BEACON], 1> h;
+	for(unsigned int i = 0; i < SENSOR_COUNTS[BEACON]; i++) {
+		h(i) = filter->x(0);
+	}
+	return h;
+}
+
+MatrixXf magy_h (HEKF* filter, float BMag) {
+	Matrix<float, SENSOR_COUNTS[MAG_Y], 1> h;
+	for(unsigned int i = 0; i < SENSOR_COUNTS[MAG_Y]; i++) {
+		h(i) = BMag * cos(filter->x(0) - filter->sData->magDir);
+	}
+	return h;
+}
+
+MatrixXf magx_h (HEKF* filter, float BMag) {
+	Matrix<float, SENSOR_COUNTS[MAG_X], 1> h;
+	for(unsigned int i = 0; i < SENSOR_COUNTS[MAG_X]; i++) {
+		h(i) = BMag * -sin(filter->x(0) - filter->sData->magDir);
+	}
+	return h;
+}
+
+MatrixXf acc_H (HEKF* filter) {
+	Matrix<float, SENSOR_COUNTS[ACC], 2> H;
+	for(unsigned int i = 0; i < SENSOR_COUNTS[ACC]; i++) {
+		H(i, 0) = 0;
+		H(i, 1) = 2 * filter->x(1) * ACC_DISTS[i];
+	}
+	return H;
+}
+
+MatrixXf beacon_H (HEKF* filter) {
+	Matrix<float, SENSOR_COUNTS[BEACON], 2> H;
+	for(unsigned int i = 0; i < SENSOR_COUNTS[BEACON]; i++) {
+		H(i, 0) = 1;
+		H(i, 1) = 0;
+	}
+	return H;
+}
+
+MatrixXf magy_H (HEKF* filter, float BMag) {
+	Matrix<float, SENSOR_COUNTS[MAG_Y], 2> H;
+	for(unsigned int i = 0; i < SENSOR_COUNTS[MAG_Y]; i++) {
+		H(i, 0) = BMag * -sin(filter->x(0) - filter->sData->magDir);
+		H(i, 1) = 0;
+	}
+	return H;
+}
+
+MatrixXf magx_H (HEKF* filter, float BMag) {
+	Matrix<float, SENSOR_COUNTS[MAG_X], 2> H;
+	for(unsigned int i = 0; i < SENSOR_COUNTS[MAG_X]; i++) {
+		H(i, 0) = BMag * -cos(filter->x(0) - filter->sData->magDir);
+		H(i, 1) = 0;
+	}
+	return H;
 }

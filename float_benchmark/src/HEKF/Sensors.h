@@ -13,38 +13,23 @@ enum Sensor {
 	MAG_X
 };
 
-#define ACC_VAR 80			//Variance of the accelerometer
-#define BEACON_VAR 0.001	//Variance of the beacon
-#define MAG_VAR 30			//Variance of the magnetometer
-#define MAG_DIR 0			//Offset of magnetometer
-#define SENSORS 4			//Total unique types of sensors used
-//Number of each sensor, in order of: accelerometer pairs, beacon, magY, magX
-constexpr unsigned int SENSOR_COUNTS[SENSORS] = {6, 1, 1, 1};
-//The distance of each accelerometer pair
-const float ACC_DISTS[SENSOR_COUNTS[ACC]] = {0.1, 0.1, 0.1, 0.1, 0.1, 0.1};
+const unsigned int SENSOR_TYPES = 4;
+constexpr unsigned int SENSOR_COUNTS[SENSOR_TYPES] = {6,		1,		1,		1};
+constexpr float SENSOR_VARS[SENSOR_TYPES] = 		 {80,		0.001,	30,		30};
+constexpr float SENSOR_ERROR_LIMIT[SENSOR_TYPES] =   {2,		1,		10,		10};
+constexpr float SENSOR_ERROR_H[SENSOR_TYPES] = 	     {3000,		3000,	3000,	3000};
+constexpr float SENSOR_ERROR_L[SENSOR_TYPES] =       {100,		100,	100,	100};
+constexpr float ACC_DISTS[SENSOR_COUNTS[ACC]] = 	 {0.1, 0.1, 0.1, 0.1, 0.1, 0.1};
 
-/*
-	Functions returning the state to observation matricies of each sensor
-	Parameters:
-		x: current state
-		BMag: magnitude of total B-field
-	Return: state to observation matrix
-*/
-MatrixXf acc_h (Matrix<float, 2, 1> x);
-MatrixXf beacon_h (Matrix<float, 2, 1> x);
-MatrixXf magy_h (Matrix<float, 2, 1> x, float BMag);
-MatrixXf magx_h (Matrix<float, 2, 1> x, float BMag);
+typedef struct sensorData {
+	float magDir;
+	unsigned int* errCount[SENSOR_TYPES];
+} SensorData;
 
-/*
-	Functions returning the state to observation jacobian of each sensor
-	Parameters:
-		x: current state
-		BMag: magnitude of total B-field
-	Return: state to observation jacobian
-*/
-MatrixXf acc_H (Matrix<float, 2, 1> x);
-MatrixXf beacon_H (Matrix<float, 2, 1> x);
-MatrixXf magy_H (Matrix<float, 2, 1> x, float BMag);
-MatrixXf magx_H (Matrix<float, 2, 1> x, float BMag);
+//Function to initialize sensor data
+SensorData* initSensorData();
+
+//Function to destroy sensor data
+void destroySensorData(SensorData* sData);
 
 #endif
