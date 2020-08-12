@@ -60,6 +60,7 @@ AccBank::~AccBank() {
     delete[] pairsdists;
     delete[] pairsangs;
     for(uint8_t k = 0; k < 4; k++) {
+        accs[k].stop();
         delete accs[k];
     }
 }

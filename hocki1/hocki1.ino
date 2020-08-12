@@ -1,3 +1,4 @@
+#include "pins.h"
 #include "src/Eigen/Eigen337.h"
 #include "src/Eigen/Dense.h"
 #include "src/HEKF/HEKF.h"
@@ -15,22 +16,6 @@ using namespace Eigen;
 #define BOTR   0.0953
 #define WHLR   0.0381
 
-// DEFINE PINS - MAGS //
-#define MAGA  38
-#define MAGB  39
-#define SRPIN 32
-
-#define MAGTS 5e-6
-
-// DEFINE PINS - IR RECVS //
-#define INT10K 23
-#define INT20K 22
-#define PK10K  20
-#define PK20K  21
-#define REF10K 18
-#define REF20K 19
-#define IRSEL  37
-
 // control variables
 unsigned long ta;
 unsigned long tb;
@@ -45,7 +30,7 @@ float leftV, rightV;
 void setup() {
 
   // begin serial output
-  Serial.begin(9600);
+  Serial.begin(115200);
   
   // set up HEKF Filter
   filter = initHEKF(HEKFDT, ALPHA, BETA, WHLR, BOTR);
