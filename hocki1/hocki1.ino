@@ -57,6 +57,7 @@ void control() {
   Matrix<float, 6, 1> accMeas = accbank->getCentMeas();
   updateHEKF(filter, accMeas, spinV, hekfClock, ACC);
   telem->writeData(hekfClock, accMeas, ACCC_TELEM);
+  telem->writeData(hekfClock, filter->x, HEKF_TELEM);
   
 }
 
