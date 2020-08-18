@@ -3,6 +3,7 @@
 
 #include "Arduino.h"
 #include "../../pins.h"
+#include "../../hocki.h"
 #include "../ADXL375/ADXL375.h"
 #include "SPI.h"
 #include "../../src/Eigen/Dense.h"

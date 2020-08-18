@@ -31,7 +31,10 @@
 #define REF20K  19
 #define IRSEL   37
 
-
+#define LEDD1   1
+#define LEDC1   2
+#define LEDD2   3
+#define LEDC2   4
 
 
 #endif

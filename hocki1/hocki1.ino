@@ -1,4 +1,5 @@
 #include "pins.h"
+#include "hocki.h"
 #include "src/Eigen/Eigen337.h"
 #include "src/Eigen/Dense.h"
 #include "src/HEKF/HEKF.h"
@@ -6,23 +7,19 @@
 #include "libraries/ADXL375/AccelReading.h"
 #include "libraries/AccBank/AccBank.h"
 #include "libraries/Telemetry/Telemetry.h"
+#include "libraries/StateLED/StateLED.h"
 #include "SPI.h"
 using namespace Eigen;
-
-// DEFINE HEKF PARAMS //
-#define HEKFDT 1.25e-4 // 5 update steps per control loop iteration ideally
-#define ALPHA  1.3775
-#define BETA   62.0224
-#define BOTR   0.0953
-#define WHLR   0.0381
 
 // control variables
 unsigned long ta;
 unsigned long tb;
 unsigned long t0;
+float targheading;
 HEKF *filter;
 AccBank *accbank;
 Telemetry *telem;
+StateLED *leds;
 elapsedMicros controlTimer;
 elapsedMicros hekfClock;
 float leftV, rightV;
@@ -42,6 +39,10 @@ void setup() {
   // begin telemetry
   telem = new Telemetry();
 
+  // begin LEDs
+  targheading = 0;
+  leds = new StateLED();
+
   // begin "motors"
   leftV = 0;
   rightV = 0;
@@ -53,12 +54,13 @@ void setup() {
 
 void control() {
 
+  uint8_t updateStatus;
   float spinV = (leftV + rightV) / 2;
   Matrix<float, 6, 1> accMeas = accbank->getCentMeas();
-  updateHEKF(filter, accMeas, spinV, hekfClock, ACC);
+  updateStatus = updateHEKF(filter, accMeas, spinV, hekfClock, ACC);
   telem->writeData(hekfClock, accMeas, ACCC_TELEM);
   telem->writeData(hekfClock, filter->x, HEKF_TELEM);
-  
+  leds->topOn(filter, false, targheading);
 }
 
 
