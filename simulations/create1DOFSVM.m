@@ -16,9 +16,9 @@ function [sys, A, B, C, D, alpha, beta] = create1DOFSVM(Kt, D, R, r_robot_im, ..
 % moi - moment of inertia (in kg*m^2)
 % TODO: REVIEW EQNS FOR ACCURACY
 
-r_robot = 0.0254 .* r_robot_im; % robot radius (m)
+r_robot = 0.0254 .* r_robot_im % robot radius (m)
 w_robot = 0.453592 .* w_robot_im; % robot mass (kg)
-r_wheel = 0.0254 .* r_wheel_im; % wheel radius (m)
+r_wheel = 0.0254 .* r_wheel_im % wheel radius (m)
 w_wheel = 0.453592 .* w_wheel_im; % wheel mass (kg)
 
 % inertia in kg * m^2
@@ -30,9 +30,9 @@ if nargin < 8
 else
     J = moi;
 end
-alpha = (Kt.^2 + D .* R ./ 2) ./ (J .* R ./ 2); % in seconds / meter
+alpha = (Kt.^2 + D .* R ./ 2) ./ (J .* R ./ 2) % in seconds / meter
 % R / 2 as these are TWO MOTORS acting IDENTICALLY
-beta = Kt ./ (J .* R / 2); % in (V * m)^-1
+beta = Kt ./ (J .* R / 2) % in (V * m)^-1
 
 A = [0 1 ; 0 -alpha];
 B = [0 ; r_wheel .* beta ./ r_robot];
