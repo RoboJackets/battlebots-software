@@ -1,8 +1,6 @@
 #ifndef CONTROLLERPACKET_H
 #define CONTROLLERPACKET_H
 
-#include "sbus-arduino/src/sbus.h"
-
 struct ControllerPacket {
 	int xSpeed;
 	int ySpeed;
@@ -11,8 +9,10 @@ struct ControllerPacket {
 	bool failsafe;
 	bool lostFrame;
 };
-
-bool failsafe;
-bool lostFrame;
+/*
+ * Error Below:
+ */
+//bool failsafe;
+//bool lostFrame;
 
 #endif
