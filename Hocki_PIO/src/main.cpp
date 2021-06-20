@@ -1,7 +1,8 @@
 #include <Arduino.h>
-#include <PinDefs.h>
-#include <Controller.h>
-#include <ControllerPacket.h>
+#include "PinDefs.h"
+#include "Controller.h"
+#include "ControllerPacket.h"
+#include "ADXL375.h"
 
 Controller c(&Serial1);
 ControllerPacket p;
