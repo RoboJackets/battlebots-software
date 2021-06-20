@@ -47,10 +47,10 @@ AccBank::AccBank() {
     float ofxy[4] = {0, 0, 0, 0};
     float ofsz[4] = {0, 0, 0, 0};
 
-    accs[0] = ADXL375(CS1, SPIRATE);
-    accs[1] = ADXL375(CS2, SPIRATE);
-    accs[2] = ADXL375(CS3, SPIRATE);
-    accs[3] = ADXL375(CS4, SPIRATE);
+    accs[0] = new ADXL375(CS1, SPIRATE);
+    accs[1] = new ADXL375(CS2, SPIRATE);
+    accs[2] = new ADXL375(CS3, SPIRATE);
+    accs[3] = new ADXL375(CS4, SPIRATE);
 
 }
 
@@ -61,15 +61,15 @@ AccBank::~AccBank() {
     delete[] pairsdists;
     delete[] pairsangs;
     for(uint8_t k = 0; k < 4; k++) {
-        accs[k].stop();
+        accs[k]->stop();
         delete accs[k];
     }
 }
 
 void AccBank::begin() {
-    for(uint8_t k = 0; k < 4; k++) 
-        accs[k].init();
-        accs[k].startContinuousOperation(ofxs[k], ofsy[k], ofsz[k]);
+    for(uint8_t k = 0; k < 4; k++) {
+        accs[k]->init();
+        accs[k]->startContinuousOperation(ofxs[k], ofsy[k], ofsz[k]);
     }
 }
 
@@ -90,26 +90,26 @@ void AccBank::reviveAcc(HEKF* filter, uint8_t accNum) {
     }
 }
 */
-void toggleSelfTest() {
+void AccBank::toggleSelfTest() {
     if(self_testing) {
         self_testing = !self_testing;
         for(uint8_t k = 0; k < 4; k++) {
-            accs[k].deactivateSelfTest();
+            accs[k]->deactivateSelfTest();
         }
     }
     else {
         self_testing = !self_testing;
         for(uint8_t k = 0; k < 4; k++) {
-            accs[k].activateSelfTest();
+            accs[k]->activateSelfTest();
         }
     }
 }
 
 Matrix<float, 4, 3> AccBank::getAllMeas() {
     Matrix<float, 4, 3> ret;
-    AccelReading readk
+    AccelReading readk;
     for(uint8_t k = 0; k < 4; k++) {
-        readk = accs[k].getXYZ();
+        readk = accs[k]->getXYZ();
         ret(k, 0) = readk.x * GRAVITY_FORCE * MG_TO_G_CONV;
         ret(k, 1) = readk.y * GRAVITY_FORCE * MG_TO_G_CONV;
         ret(k, 2) = readk.z * GRAVITY_FORCE * MG_TO_G_CONV;
@@ -149,7 +149,7 @@ Matrix<float, 6, 1> AccBank::getCentMeas() {
     Matrix<float, 4, 3> allret = getAllMeas();
     uint8_t idx1, idx2;
     float cg1, cg2;
-    for(uint8_t k = 0, k < 6; k++) {
+    for(uint8_t k = 0; k < 6; k++) {
         idx1 = pairs1(k, 0);
         idx2 = pairs2(k, 0);
         cg1 = allret(idx1, 0) * centproj1x(k, 0) + allret(idx1, 1) * centproj1y(k, 0);

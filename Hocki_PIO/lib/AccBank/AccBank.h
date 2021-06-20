@@ -27,7 +27,7 @@ class AccBank {
         float   pairsdists[6];
         float   pairsangs[6];
         bool    self_testing;
-        ADXL375 accs[4];
+        ADXL375* accs[4];
 
         Matrix<float, 6, 1> centproj1y;
         Matrix<float, 6, 1> centproj1x;
