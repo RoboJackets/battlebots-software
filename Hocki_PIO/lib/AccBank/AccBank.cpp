@@ -69,7 +69,7 @@ AccBank::~AccBank() {
 void AccBank::begin() {
     for(uint8_t k = 0; k < 4; k++) {
         accs[k]->init();
-        accs[k]->startContinuousOperation(ofxs[k], ofsy[k], ofsz[k]);
+        accs[k]->startContinuousOperation(ofsx[k], ofsy[k], ofsz[k]);
     }
 }
 

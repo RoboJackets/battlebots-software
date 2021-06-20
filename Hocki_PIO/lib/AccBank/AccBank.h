@@ -29,7 +29,7 @@ class AccBank {
         bool    self_testing;
         ADXL375* accs[4];
         float ofsx[4]; 
-        float ofxy[4]; 
+        float ofsy[4]; 
         float ofsz[4]; 
 
         Matrix<float, 6, 1> centproj1y;
