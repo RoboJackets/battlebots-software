@@ -1,3 +1,6 @@
 [submodule "Hocki_PIO/lib/sbus-arduino"]
 	path = Hocki_PIO/lib/sbus-arduino
 	url = https://github.com/bolderflight/sbus-arduino.git
+[submodule "Hocki_PIO/include/eigen"]
+	path = Hocki_PIO/include/eigen
+	url = https://github.com/bolderflight/eigen.git
