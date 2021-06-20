@@ -7,8 +7,7 @@ ADXL375::ADXL375(uint8_t cs_pin, uint8_t int1_pin, uint8_t int2_pin, int spi_rat
     _cs_pin = cs_pin;
     _int1_pin = int1_pin;
     _int2_pin = int2_pin; 
-    SPISettings spi_settings(spi_rate, MSBFIRST, SPI_MODE3);
-    *_spi_settings = spi_settings;
+    _spi_settings= new SPISettings(spi_rate, MSBFIRST, SPI_MODE3);
 }
 
 ADXL375::~ADXL375() {
