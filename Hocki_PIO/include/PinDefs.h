@@ -1,6 +1,10 @@
 #ifndef PINS_H
 #define PINS_H
 
+/*
+This file is for defining electrical characteristics such as pin and peripheral mappings and settings.
+*/
+
 #define MOSIPIN 11
 #define MISOPIN 12
 #define SCLKPIN 13

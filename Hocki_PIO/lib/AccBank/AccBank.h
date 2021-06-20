@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 #include <PinDefs.h> 
-#include <hocki.h>
+#include <Hocki.h>
 #include <SPI.h>
 #include <eigen/include/Eigen/Eigen>
 #include "ADXL375.h"

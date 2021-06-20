@@ -1,6 +1,10 @@
 #ifndef HOCKI_H
 #define HOCKI_H
 
+/*
+This file is for defining physical parameters of the robot
+*/
+
 // SPI PARAMS
 #define SPIRATE 5000000
 
