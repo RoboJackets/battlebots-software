@@ -46,6 +46,7 @@
 #define ADXL375_TRIGGER_INT2_PIN        1
 
 
+
 class ADXL375
 {
   public:
@@ -53,7 +54,7 @@ class ADXL375
     uint8_t _int1_pin;
     uint8_t _int2_pin;
     SPISettings *_spi_settings;
-    ADXL375(uint8_t cs_pin, uint8_t int1_pin, uint8_t int2_pin, int spi_rate);
+    ADXL375(uint8_t cs_pin, int spi_rate);
     ~ADXL375();
     void init();
     void startMeasuring();

@@ -2,11 +2,9 @@
 #include "ADXL375.h"
 #include "SPI.h"
 
-ADXL375::ADXL375(uint8_t cs_pin, uint8_t int1_pin, uint8_t int2_pin, int spi_rate)
+ADXL375::ADXL375(uint8_t cs_pin, int spi_rate)
 {
     _cs_pin = cs_pin;
-    _int1_pin = int1_pin;
-    _int2_pin = int2_pin; 
     _spi_settings= new SPISettings(spi_rate, MSBFIRST, SPI_MODE3);
 }
 
@@ -71,7 +69,7 @@ uint8_t ADXL375::getFIFOBufferSize()
   return readRegister(ADXL375_REG_FIFO_STATUS) & 0b00111111;
 }
 
-void ADXL375::startContinuousOperation(float ofsx, float ofxy, float ofsz) {
+void ADXL375::startContinuousOperation(float ofsx, float ofsy, float ofsz) {
     
     setFIFOMode(ADXL375_FIFO_MODE_BYPASS);
 
@@ -80,9 +78,9 @@ void ADXL375::startContinuousOperation(float ofsx, float ofxy, float ofsz) {
     writeRegister(ADXL375_REG_INT_ENABLE, 0b10000001);
     writeRegister(ADXL375_REG_INT_MAP, 0b00000001);
 
-    int8_t ofsx_i = (int8) ((ofsx / 9.81) / 0.197); 
-    int8_t ofsy_i = (int8) ((ofsy / 9.81) / 0.197); 
-    int8_t ofsz_i = (int8) ((ofsz / 9.81) / 0.197);
+    int8_t ofsx_i = (int8_t) ((ofsx / 9.81) / 0.197); 
+    int8_t ofsy_i = (int8_t) ((ofsy / 9.81) / 0.197); 
+    int8_t ofsz_i = (int8_t) ((ofsz / 9.81) / 0.197);
 
     writeRegister(ADXL375_REG_OFSX, (uint8_t) ofsx_i);
     writeRegister(ADXL375_REG_OFSY, (uint8_t) ofsy_i);

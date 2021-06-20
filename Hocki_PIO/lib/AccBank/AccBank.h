@@ -1,14 +1,15 @@
 #ifndef AccBank_h
 #define AccBank_h
 
-#include "Arduino.h"
-#include "../../pins.h"
-#include "../../hocki.h"
-#include "../ADXL375/ADXL375.h"
-#include "SPI.h"
-#include "../../src/Eigen/Dense.h"
-#include "../../src/Eigen/Eigen337.h"
-#include "../../src/HEKF/HEKF.h"
+#include <Arduino.h>
+#include <PinDefs.h> 
+#include <hocki.h>
+#include <SPI.h>
+#include <eigen/include/Eigen/Eigen>
+#include "ADXL375.h"
+//#include "../../src/HEKF/HEKF.h"
+
+using namespace Eigen;
 
 #define SPIRATE 5000000 // 5 MHz SPI Clock
 
@@ -37,8 +38,8 @@ class AccBank {
         ~AccBank();
 
         void begin();
-        void killAcc(HEKF* filter, uint8_t accNum);
-        void reviveAcc(HEKF* filter, uint8_t accNum);
+        //void killAcc(HEKF* filter, uint8_t accNum);
+        //void reviveAcc(HEKF* filter, uint8_t accNum);
         void toggleSelfTest();
         Matrix<float, 6, 1> getCentMeas();
         Matrix<float, 4, 1> getXMeas();

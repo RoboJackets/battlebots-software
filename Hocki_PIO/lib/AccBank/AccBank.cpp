@@ -1,5 +1,6 @@
-#include "Arduino.h"
+#include <Arduino.h>
 #include "AccBank.h"
+#include "ADXL375.h"
 #include "SPI.h"
 
 AccBank::AccBank() {
@@ -46,10 +47,10 @@ AccBank::AccBank() {
     float ofxy[4] = {0, 0, 0, 0};
     float ofsz[4] = {0, 0, 0, 0};
 
-    accs[0] = ADXL375(CS1, INT1A, INT1B, SPI_RATE);
-    accs[1] = ADXL375(CS2, INT2A, INT2B, SPI_RATE);
-    accs[2] = ADXL375(CS3, INT3A, INT3B, SPI_RATE);
-    accs[3] = ADXL375(CS4, INT4A, INT4B, SPI_RATE);
+    accs[0] = ADXL375(CS1, SPIRATE);
+    accs[1] = ADXL375(CS2, SPIRATE);
+    accs[2] = ADXL375(CS3, SPIRATE);
+    accs[3] = ADXL375(CS4, SPIRATE);
 
 }
 
@@ -72,6 +73,7 @@ void AccBank::begin() {
     }
 }
 
+/*
 void AccBank::killAcc(HEKF* filter, uint8_t accNum) {
     for(uint8_t k = 0; k < 6; k++) {
         if(pairs1[k] == accNum || pairs2[k] == accNum) {
@@ -87,7 +89,7 @@ void AccBank::reviveAcc(HEKF* filter, uint8_t accNum) {
         }
     }
 }
-
+*/
 void toggleSelfTest() {
     if(self_testing) {
         self_testing = !self_testing;
