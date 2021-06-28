@@ -9,10 +9,5 @@ struct ControllerPacket {
 	bool failsafe;
 	bool lostFrame;
 };
-/*
- * Error Below:
- */
-//bool failsafe;
-//bool lostFrame;
 
 #endif

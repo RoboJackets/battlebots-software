@@ -8,8 +8,6 @@
 class Controller {
     public:
         Controller();
-        //Error here:
-        //SbusRx sbus_rx;
         SbusRx *sbus_rx;
         void read(ControllerPacket *packet);
 };
