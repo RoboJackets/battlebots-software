@@ -1,17 +1,36 @@
-#include <Arduino.h>
-#include "PinDefs.h"
 #include "Controller.h"
 #include "ControllerPacket.h"
-#include "ADXL375.h"
+#include "Watchdog_t4.h"
 
-Controller c(&Serial1);
+WDT_T4<WDT3> wdt;
+Controller c;
 ControllerPacket p;
+int i = 0;
+
+void failureHandler() {
+  Serial.println("Failure.");
+}
+
 void setup() {
-  /* Serial to display the received data */
   Serial.begin(115200);
-  while (!Serial) {}
+  while (!SerialUSB) {}
+  c.init();
+  WDT_timings_t config;
+  config.timeout = 50; /* corresponds to 50 ms */
+  config.callback = failureHandler;
+  wdt.begin(config);
 }
 
 void loop() {
-  c.read(&p);
+  if (c.read(&p)) {
+    Serial.println(p.xSpeed);
+    Serial.println(p.ySpeed);
+    wdt.feed();
+  } else {
+    Serial.println("Not reading.");
+  }
+  Serial.println(i);
+  
+  delay(10);
+  i = i + 1;
 }

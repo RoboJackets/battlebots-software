@@ -1,17 +1,18 @@
 #ifndef CONTROLLER_H
 #define CONTROLLER_H
 
-#include <Arduino.h>
-#include <sbus.h>
-#include <ControllerPacket.h>
+#include "Arduino.h"
+#include "sbus.h"
+#include "ControllerPacket.h"
 
 class Controller {
+    private:
+      SbusRx *sbus_rx;
+      bool startedReading;
     public:
-        Controller(HardwareSerial* port);
-        //Error here:
-        //SbusRx sbus_rx;
-        SbusRx *sbus_rx;
-        void read(ControllerPacket *packet);
+        Controller();
+        void init();
+        bool read(ControllerPacket *packet);
 };
 
 #endif

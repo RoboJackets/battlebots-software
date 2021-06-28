@@ -6,11 +6,11 @@
 #include "ControllerPacket.h"
 
 class Controller {
+    private:
+      SbusRx *sbus_rx;
+      bool startedReading;
     public:
         Controller();
-        //Error here:
-        //SbusRx sbus_rx;
-        SbusRx *sbus_rx;
         void read(ControllerPacket *packet);
 };
 
