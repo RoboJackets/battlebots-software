@@ -9,7 +9,6 @@
 class Controller {
 	private:
 		SbusRx *sbus_rx;
-		bool startedReading;
 	public:
 		Controller();
 		WDT_T4<WDT3> wdt;

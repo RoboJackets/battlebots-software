@@ -3,13 +3,13 @@
 #include "Controller.h"
 #include "Watchdog_t4.h"
 #include "Arduino.h"
+#include "../../include/PinDefs.h"
 #include <array>
 Controller::Controller(){
-	sbus_rx = new SbusRx(&Serial1);
-	startedReading = false;
+	sbus_rx = new SbusRx(&SERIAL_SBUS);
 }
 
-void failureHandler() {
+void watchdogFailureCallback() {
 	Serial.println("Failure.");
 }
 
@@ -17,7 +17,7 @@ void Controller::init() {
 	sbus_rx->Begin();
 	WDT_timings_t config;
 	config.timeout = 50; /* corresponds to 50 ms */
-	config.callback = failureHandler;
+	config.callback = watchdogFailureCallback;
 	wdt.begin(config);
 }
 
