@@ -3,7 +3,7 @@
 #include "Controller.h"
 #include "Watchdog_t4.h"
 #include "Arduino.h"
-#include "../../include/PinDefs.h"
+#include "PinDefs.h"
 #include <array>
 Controller::Controller(){
 	sbus_rx = new SbusRx(&SERIAL_SBUS);
