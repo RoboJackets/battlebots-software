@@ -4,3 +4,6 @@
 [submodule "Hocki_PIO/include/eigen"]
 	path = Hocki_PIO/include/eigen
 	url = https://github.com/bolderflight/eigen.git
+[submodule "Hocki_PIO/lib/WDT_T4"]
+	path = Hocki_PIO/lib/WDT_T4
+	url = https://github.com/tonton81/WDT_T4.git

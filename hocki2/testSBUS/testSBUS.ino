@@ -7,11 +7,14 @@ ControllerPacket p;
 void setup() {
   /* Serial to display the received data */
   Serial.begin(115200);
-  while (!Serial) {}
+  while (!SerialUSB) {}
   /* Begin the SBUS communication */
- 
+  //c.sbus_rx->Begin();
 }
 
 void loop() {
   c.read(&p);
+  Serial.println(p.xSpeed);
+  Serial.println(p.ySpeed);
+  delay(100);
 }

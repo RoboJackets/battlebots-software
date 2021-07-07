@@ -1,17 +1,26 @@
-#include <Arduino.h>
-#include "PinDefs.h"
 #include "Controller.h"
 #include "ControllerPacket.h"
-#include "ADXL375.h"
+#include "Watchdog_t4.h"
 
-Controller c(&Serial1);
+Controller c;
 ControllerPacket p;
+int i = 0;
+
 void setup() {
-  /* Serial to display the received data */
-  Serial.begin(115200);
-  while (!Serial) {}
+	Serial.begin(115200);
+	while (!SerialUSB) {}
+	c.init();
 }
 
 void loop() {
-  c.read(&p);
+	if (c.read(&p)) {
+		Serial.println(p.xSpeed);
+		Serial.println(p.ySpeed);
+		c.wdt.feed();
+	} else {
+		Serial.println("Not reading.");
+	}
+	Serial.println(i);
+	delay(10);
+	i = i + 1;
 }
