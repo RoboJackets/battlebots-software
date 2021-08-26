@@ -5,6 +5,19 @@
 #include "Arduino.h"
 #include "PinDefs.h"
 #include <array>
+
+/*
+ * channel 0: Right Stick L/R
+ * channel 1: Right Stick U/D
+ * channel 2: Left Stick U/D
+ * channel 3: Left Stick L/R
+ * channel 4: Knob Left
+ * channel 5: Knob right
+ * channel 6: SwA
+ * channel 7: SwB
+ * channel 8: SwC
+ * channel 9: SwD
+ */
 Controller::Controller(){
 	sbus_rx = new SbusRx(&SERIAL_SBUS);
 }
@@ -28,11 +41,12 @@ bool Controller::read(ControllerPacket *packet) {
 		//int rightLR = rx.rx_channels()[0];
 		int rightUD = rx_channels[1];
 		int leftLR = rx_channels[2];
+		int rightLR = rx_channels[0];
 		//int leftUD = rx.rx_channels()[3];
-		bool arcadeMode = (bool) rx_channels[6];
-		if (arcadeMode) {
+		packet->tankDrive = (bool) (rx_channels[6] > 1000);
+		if (packet->tankDrive) {
 			packet->xSpeed = rightUD;
-			packet->rotSpeed = leftLR;
+			packet->rotSpeed = rightLR;
 		}
 	} 
 	return reading;

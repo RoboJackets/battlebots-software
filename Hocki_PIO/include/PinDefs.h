@@ -27,8 +27,8 @@ This file is for defining electrical characteristics such as pin and peripheral 
 #define INT4B   24
 */
 
-#define ESC_L 29
-#define ESC_R 24
+#define ESC_L 28
+#define ESC_R 29
 
 #define MAGAPIN 38
 #define MAGBPIN 39

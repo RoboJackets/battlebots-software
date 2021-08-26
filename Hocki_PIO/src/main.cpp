@@ -28,7 +28,9 @@ void loop() {
 			SerialUSB.print(p.ySpeed);
 			SerialUSB.print("  Rot Speed: ");
 			SerialUSB.println(p.rotSpeed);
-			drive.setPower(p.xSpeed + p.rotSpeed, p.xSpeed - p.rotSpeed);
+			int powerL = map(p.xSpeed, 245, 1805, 300, 700);
+			int powerR = map(p.xSpeed, 245, 1805, 300, 700);
+			drive.setPower(powerL, powerR);
 		}
 	} else {
 		Serial.println("Not reading.");

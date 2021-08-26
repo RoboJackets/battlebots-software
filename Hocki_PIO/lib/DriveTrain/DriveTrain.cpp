@@ -22,7 +22,7 @@ void DriveTrain::setPower(int powerLeft, int powerRight){
 }
 
 /*
-Arms ESC according to https://github.com/bitdump/BLHeli/blob/master/BLHeli_32%20ARM/BLHeli_32%20manual%20ARM%20Rev32.x.pdf
+Arms ESC according to https://raw.githubusercontent.com/bitdump/BLHeli/master/BLHeli_32%20ARM/BLHeli_32%20manual%20ARM%20Rev32.x.pdf 
 */
 void DriveTrain::arm(){
     for(int i = ESC_STOP_VAL; i < ESC_STOP_VAL + ESC_ARM_PEAK_VAL; i++) {
