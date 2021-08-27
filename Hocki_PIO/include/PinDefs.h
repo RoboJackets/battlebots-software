@@ -9,11 +9,14 @@ This file is for defining electrical characteristics such as pin and peripheral 
 #define MISOPIN 12
 #define SCLKPIN 13
 
+//CS pins for accelerometers SPI
 #define CS1     14
 #define CS2     15
 #define CS3     9
 #define CS4     10
 
+/*
+//Interrupts not used
 #define INT1A   40
 #define INT1B   41
 #define INT2A   16
@@ -22,6 +25,10 @@ This file is for defining electrical characteristics such as pin and peripheral 
 #define INT3B   7
 #define INT4A   25
 #define INT4B   24
+*/
+
+#define ESC_L 28
+#define ESC_R 29
 
 #define MAGAPIN 38
 #define MAGBPIN 39
