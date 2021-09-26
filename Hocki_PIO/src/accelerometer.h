@@ -12,11 +12,15 @@
 void setup();
 void loop();
 
-#define SPIRATE 1000000
+#define SPIRATE 5000000
 
 //SPISettings spi_settings(SPIRATE, MSBFIRST, SPI_MODE3);
 
-ADXL375 accel(CS1, SPIRATE);
+ADXL375 accel1(CS1, SPIRATE);
+ADXL375 accel2(CS2, SPIRATE);
+ADXL375 accel3(CS3, SPIRATE);
+ADXL375 accel4(CS4, SPIRATE);
+
 AccelReading val;
 
 void setup() {
@@ -31,21 +35,40 @@ void setup() {
     digitalWrite(CS3, HIGH);
     digitalWrite(CS4, HIGH);
 
-    Serial.begin(57600);
-    while(!Serial){}
-    Serial.println("Started");
+    Serial.begin(115200);
+    //while(!Serial){}
+    SPI.begin();
 
-    Serial.println("Init");
-    accel.init();
+    accel1.init();
+    accel1.setCalibrationValue(2, -3);
+    accel1.startMeasuring();
 
-    accel.startMeasuring();
+    accel2.init();
+    accel2.setCalibrationValue(2, -5);
+    accel2.startMeasuring();
+
+    accel3.init();
+    accel3.setCalibrationValue(2, -5);
+    accel3.startMeasuring();
+
+    accel4.init();
+    accel4.setCalibrationValue(2, -5);
+    accel4.startMeasuring();
 }
 
 void loop() {
-    Serial.println("hello");
-    val = accel.getXYZ();
-    val.printDebug();
-    delay(200); 
+    val = accel1.getXYZ();
+    Serial.print(val.z);
+    Serial.print("\t");
+    val = accel2.getXYZ();
+    Serial.print(val.z);
+    Serial.print("\t");
+    val = accel3.getXYZ();
+    Serial.print(val.z);
+    Serial.print("\t");
+    val = accel4.getXYZ();
+    Serial.println(val.z);
+    delay(50); 
 }
 
 #endif

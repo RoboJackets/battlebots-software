@@ -7,12 +7,12 @@ class AccelReading
 {
   public:
     AccelReading();
-    void init(int16_t x, int16_t y, int16_t z, uint8_t scalingFactor = 1);
-    uint32_t accelSize();
+    void init(int16_t x, int16_t y, int16_t z, double scalingFactor = 1);
+    double accelSize();
     void printDebug();
-    uint32_t x;
-    uint32_t y;
-    uint32_t z;
+    double x;
+    double y;
+    double z;
 };
 
 #endif

@@ -43,7 +43,7 @@ AccelReading ADXL375::getXYZ()
     data[0] | data[1]<<8,
     data[2] | data[3]<<8,
     data[4] | data[5]<<8,
-    ADXL375_XYZ_READ_SCALE_FACTOR
+    (double)(1.0/ADXL375_XYZ_READ_SCALE_FACTOR)
   );
   
   return xyz;
@@ -192,3 +192,14 @@ void ADXL375::writeRegister(uint8_t regAddress, uint8_t value)
   SPI.endTransaction();
 }
 
+
+bool ADXL375::setCalibrationValue(uint8_t axis, int8_t val)
+{
+  if(axis >=0 && axis <= 3) {
+    writeRegister(ADXL375_REG_OFSX + axis, val);
+    return true;
+  }
+  else {
+    return false;
+  }
+}
