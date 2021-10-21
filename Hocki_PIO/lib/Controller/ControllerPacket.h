@@ -4,8 +4,15 @@
 struct ControllerPacket {
 	int xSpeed;
 	int ySpeed;
+	
+	float rightud;
+	float rightlr;
+	float leftud;
+	float leftlr;
+
 	int rotSpeed;
 	bool tankDrive;
+	bool nfs;
 	bool failsafe;
 	bool lostFrame;
 };

@@ -2,6 +2,7 @@
     "files.associations": {
         "array": "cpp",
         "*.tpp": "cpp",
-        "*.tcc": "cpp"
+        "*.tcc": "cpp",
+        "algorithm": "cpp"
     }
 }
