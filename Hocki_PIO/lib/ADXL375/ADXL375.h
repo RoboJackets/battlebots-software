@@ -34,7 +34,7 @@
 #define ADXL375_REG_FIFO_CTL            0x38    // FIFO control
 #define ADXL375_REG_FIFO_STATUS         0x39    // FIFO status
 
-#define ADXL375_XYZ_READ_SCALE_FACTOR   49      // scaling factor when reading xyz data
+#define ADXL375_XYZ_READ_SCALE_FACTOR   24.4      // scaling factor when reading xyz data
 #define ADXL375_THRESH_SHOCK_SCALE      780     // scaling factor for shock threshold register
 
 #define ADXL375_FIFO_MODE_BYPASS        0b00
@@ -71,6 +71,7 @@ class ADXL375
     bool readInt1();
     bool readInt2();
     void setDataRate(uint8_t rate);
+    bool setCalibrationValue(uint8_t axis, int8_t val);
     uint8_t getFIFOBufferSize();
     void setFIFOMode(uint8_t mode, uint8_t trigger = 0, uint8_t samples = 0);
   private:
