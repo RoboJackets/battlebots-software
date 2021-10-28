@@ -8,6 +8,8 @@
 #include "PinDefs.h"
 #include "ADXL375.h"
 #include "AccelReading.h"
+#include "Logger.h"
+
 
 void setup();
 void loop();
@@ -22,6 +24,8 @@ ADXL375 accel3(CS3, SPIRATE);
 ADXL375 accel4(CS4, SPIRATE);
 
 AccelReading val;
+
+
 
 void setup() {
   // put your setup code here, to run once:
@@ -54,6 +58,15 @@ void setup() {
     accel4.init();
     accel4.setCalibrationValue(2, -5);
     accel4.startMeasuring();
+
+    Logger dataLog("log.txt");
+    dataLog.log("Test", "Test successful");
+    dataLog.log("Overload test");
+    dataLog.log("Int Test", 10);
+    dataLog.log("Float test", 3.1415);
+
+
+
 }
 
 void loop() {
