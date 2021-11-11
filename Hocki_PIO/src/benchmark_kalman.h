@@ -25,7 +25,7 @@ void setup() {
 
 void loop() {
     while (count < 10000) {
-        Eigen::Vector4f measured = Eigen::Vector4f(rand(), rand(), rand(), rand());
+        Eigen::Vector4f measured = Eigen::Vector4f::Random();
 
         std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
         k.update(measured, 0.1);
