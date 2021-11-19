@@ -8,6 +8,7 @@
 #include "PinDefs.h"
 #include "ADXL375.h"
 #include "AccelReading.h"
+#include "KalmanFilter.h"
 
 void setup();
 void loop();
