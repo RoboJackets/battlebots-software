@@ -7,7 +7,6 @@
 #include "DriveTrain.h"
 #include "PinDefs.h"
 #include "KalmanFilter.h"
-#include "../include/eigen/include/Eigen/Dense"
 #include <stdio.h>
 #include <stdlib.h>
 #include <chrono>
