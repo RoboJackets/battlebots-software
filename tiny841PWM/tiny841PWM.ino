@@ -1,5 +1,7 @@
 /*
- * Make sure CKDIV8 is set so board runs at 8MHz!
+ * Make sure CKDIV8 is set so board runs at 8MHz internal oscillator!
+ * Avrdude command:
+ * avrdude -c usbtiny -p t841 -U lfuse:w:0xC2:m
  */
 
 const bool freq = 1; //0=10kHz, 1=20kHz
