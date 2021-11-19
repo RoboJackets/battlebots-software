@@ -1,5 +1,4 @@
-
-#include "../../include/eigen/include/Eigen/Dense"
+#include <Eigen.h>
 
 
 
