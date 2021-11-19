@@ -2,7 +2,7 @@
 
 #define mag_filter_a 38
 #define mag_filter_b 39
-int va, vb = 0;
+float va, vb = 0;
 
 void setup() {
   pinMode(mag_filter_a, INPUT);
@@ -11,9 +11,10 @@ void setup() {
 }
 
 void loop() {
-  va = analogRead(mag_filter_a);
-  vb = analogRead(mag_filter_b);
-  Serial.println(va);
+  va = analogRead(mag_filter_a) / 1023.0 * 3.24;
+  va = 0;
+  vb = analogRead(mag_filter_b) / 1023.0 * 3.24;
+  Serial.print(va);
   Serial.print(" ");
   Serial.println(vb);
 }
