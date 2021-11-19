@@ -5,6 +5,7 @@
 #include "Arduino.h"
 #include "PinDefs.h"
 #include <array>
+#include "util.h"
 
 /*
  * channel 0: Right Stick L/R
@@ -18,6 +19,7 @@
  * channel 8: SwC
  * channel 9: SwD
  */
+
 Controller::Controller(){
 	sbus_rx = new SbusRx(&SERIAL_SBUS);
 }
@@ -38,16 +40,13 @@ bool Controller::read(ControllerPacket *packet) {
 	bool reading = sbus_rx->Read();
 	if (reading) {
 	std::array<uint16_t, 16> rx_channels = sbus_rx->rx_channels();
-		//int rightLR = rx.rx_channels()[0];
-		int rightUD = rx_channels[1];
-		int leftLR = rx_channels[2];
-		int rightLR = rx_channels[0];
-		//int leftUD = rx.rx_channels()[3];
-		packet->tankDrive = (bool) (rx_channels[6] > 1000);
-		if (packet->tankDrive) {
-			packet->xSpeed = rightUD;
-			packet->rotSpeed = rightLR;
-		}
+		packet->rightlr = mapFloat((long) rx_channels[0], 240, 1807, -1, 1);
+		packet->rightud = mapFloat((long) rx_channels[1], 240, 1807, -1, 1);
+		packet->leftud = mapFloat((long) rx_channels[2], 240, 1807, -1, 1);
+		packet->leftlr = mapFloat((long) rx_channels[3], 240, 1807, -1, 1);
+
+		packet->tankDrive = (bool) (rx_channels[7] > 1000);
+		packet->nfs = (bool) (rx_channels[6] > 1000);
 	} 
 	return reading;
 }
