@@ -1,12 +1,14 @@
 #include "Logger.h"
 
 
-Logger::Logger(std::string logName = "log.txt"){
+Logger::Logger(){
+}
 
-                           
+void Logger::begin(std::string logName = "log.txt")
+{
     SD.begin(BUILTIN_SDCARD);                       //Initiate built-in SD card
     logFile = SD.open(logName.c_str(), FILE_WRITE); //Open log file
-    
+
 }
 
 void Logger::log(std::string field, std::string value){
@@ -27,6 +29,14 @@ void Logger::log(std::string field, double value){
     char buffer[10];
     sprintf(buffer, "%f", value);
     logFile.write((field + ": " + buffer + "\n").c_str());    //Write "[field]: [value] to file"
+}
+
+void Logger::close() {
+    logFile.close();
+}
+
+void Logger::flush() {
+    logFile.flush();
 }
 
 Logger::~Logger(){

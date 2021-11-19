@@ -25,6 +25,7 @@ ADXL375 accel4(CS4, SPIRATE);
 
 AccelReading val;
 
+Logger dataLog;
 
 
 void setup() {
@@ -59,7 +60,8 @@ void setup() {
     accel4.setCalibrationValue(2, -5);
     accel4.startMeasuring();
 
-    Logger dataLog("log.txt");
+    dataLog.begin("log.txt");
+
     dataLog.log("Test", "Test successful");
     dataLog.log("Overload test");
     dataLog.log("Int Test", 10);
@@ -71,16 +73,22 @@ void setup() {
 
 void loop() {
     val = accel1.getXYZ();
-    Serial.print(val.z);
-    Serial.print("\t");
+    int startTime = micros();
+    dataLog.log("Acc1Z", val.z);
+
     val = accel2.getXYZ();
-    Serial.print(val.z);
-    Serial.print("\t");
+    dataLog.log("Acc2Z", val.z);
+
     val = accel3.getXYZ();
-    Serial.print(val.z);
-    Serial.print("\t");
+    dataLog.log("Acc2Z", val.z);
+
     val = accel4.getXYZ();
-    Serial.println(val.z);
+    dataLog.log("Acc2Z", val.z);
+
+    dataLog.flush();
+    Serial.print("Time to read and write: ");
+    Serial.println(micros() - startTime);
+
     delay(50); 
 }
 
