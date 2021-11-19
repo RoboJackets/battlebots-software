@@ -4,31 +4,36 @@
 Logger::Logger(){
 }
 
-void Logger::begin(std::string logName = "log.txt")
+void Logger::begin(String logName = "log.txt")
 {
     SD.begin(BUILTIN_SDCARD);                       //Initiate built-in SD card
     logFile = SD.open(logName.c_str(), FILE_WRITE); //Open log file
 
 }
 
-void Logger::log(std::string field, std::string value){
+void Logger::log(String field, String value){
     logFile.write((field + ": " + value + "\n").c_str());                    //Write "[field]: [value] to file"
 }
 
-void Logger::log(std::string field){
+void Logger::log(String field){
     logFile.write((field + "\n").c_str());                                   //Write to "[field]" to file
 }
 
-void Logger::log(std::string field, int value){
-    char buffer[10];
-    sprintf(buffer, "%d", value);
+void Logger::log(String field, int value){
+    String buffer = String(value);
     logFile.write((field + ": " + buffer + "\n").c_str());    //Write "[field]: [value] to file"
 }
 
-void Logger::log(std::string field, double value){
-    char buffer[10];
-    sprintf(buffer, "%f", value);
+void Logger::log(String field, double value){
+    String buffer = String(value);
     logFile.write((field + ": " + buffer + "\n").c_str());    //Write "[field]: [value] to file"
+}
+
+// Logs an entire array to a particular field
+void Logger::logStampedArray(String field, double times[], double values[], int length){ //Logs an array of timestamped values to file
+    for(int i = 0; i < length; ++i){
+        log(field, String(times[i]) + "," + String(values[i]));
+    }
 }
 
 void Logger::close() {

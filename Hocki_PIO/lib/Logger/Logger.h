@@ -1,7 +1,6 @@
 #ifndef LOGGER_H
 #define LOGGER_H
 
-#include <string>
 #include <fstream>
 #include <SPI.h>
 #include <SD.h>
@@ -11,11 +10,12 @@
 class Logger{
     public:
         Logger();                    //Constructor
-        void begin(std::string logName);                    //Constructor
-        void log(std::string field, std::string value); //Writes "[field]: [value]" to the log file
-        void log(std::string field);                    //Writes "[field]" to the log file
-        void log(std::string field, int value);          //Writes "[field]: [value]" to file, but string-ifys ints for you
-        void log(std::string field, double value);        //Writes "[field]: [value]" to file, but string-ifys floats for you
+        void begin(String logName);                    //Constructor
+        void log(String field, String value); //Writes "[field]: [value]" to the log file
+        void log(String field);                    //Writes "[field]" to the log file
+        void log(String field, int value);          //Writes "[field]: [value]" to file, but string-ifys ints for you
+        void log(String field, double value);        //Writes "[field]: [value]" to file, but string-ifys floats for you
+        void logStampedArray(String field, double times[], double values[], int length); //Logs an array of timestamped values to file
         void close();
         void flush();
         ~Logger();                                      //Destructor

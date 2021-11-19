@@ -72,22 +72,30 @@ void setup() {
 }
 
 void loop() {
-    val = accel1.getXYZ();
     int startTime = micros();
+    for(int i = 0; i < 4; i++)
+    {
+      val = accel1.getXYZ();
+
+    }
+    Serial.print("Time to read accel: ");
+    Serial.println(micros() - startTime); // This takes about 52 us
+
+    startTime = micros();
     dataLog.log("Acc1Z", val.z);
 
-    val = accel2.getXYZ();
+    //val = accel2.getXYZ();
     dataLog.log("Acc2Z", val.z);
 
-    val = accel3.getXYZ();
-    dataLog.log("Acc2Z", val.z);
+    //val = accel3.getXYZ();
+    dataLog.log("Acc3Z", val.z);
 
-    val = accel4.getXYZ();
-    dataLog.log("Acc2Z", val.z);
+    //val = accel4.getXYZ();
+    dataLog.log("Acc4Z", val.z);
 
     dataLog.flush();
-    Serial.print("Time to read and write: ");
-    Serial.println(micros() - startTime);
+    Serial.print("Time to write SD: ");
+    Serial.println(micros() - startTime); // This takes about 3.3ms
 
     delay(50); 
 }
