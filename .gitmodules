@@ -7,3 +7,6 @@
 [submodule "Hocki_PIO/lib/WDT_T4"]
 	path = Hocki_PIO/lib/WDT_T4
 	url = https://github.com/tonton81/WDT_T4.git
+[submodule "Hocki_PIO/lib/Eigen"]
+	path = Hocki_PIO/lib/Eigen
+	url = https://github.com/moritzmaier/Eigen.git
