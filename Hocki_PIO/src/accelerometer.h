@@ -9,7 +9,7 @@
 #include "ADXL375.h"
 #include "AccelReading.h"
 #include "Logger.h"
-
+#include "KalmanFilter.h"
 
 void setup();
 void loop();
