@@ -8,6 +8,7 @@
 #include "PinDefs.h"
 #include "ADXL375.h"
 #include "AccelReading.h"
+#include "Logger.h"
 #include "KalmanFilter.h"
 
 void setup();
@@ -23,6 +24,9 @@ ADXL375 accel3(CS3, SPIRATE);
 ADXL375 accel4(CS4, SPIRATE);
 
 AccelReading val;
+
+Logger dataLog;
+
 
 void setup() {
   // put your setup code here, to run once:
@@ -55,20 +59,44 @@ void setup() {
     accel4.init();
     accel4.setCalibrationValue(2, -5);
     accel4.startMeasuring();
+
+    dataLog.begin("log.txt");
+
+    dataLog.log("Test", "Test successful");
+    dataLog.log("Overload test");
+    dataLog.log("Int Test", 10);
+    dataLog.log("Float test", 3.1415);
+
+
+
 }
 
 void loop() {
-    val = accel1.getXYZ();
-    Serial.print(val.z);
-    Serial.print("\t");
-    val = accel2.getXYZ();
-    Serial.print(val.z);
-    Serial.print("\t");
-    val = accel3.getXYZ();
-    Serial.print(val.z);
-    Serial.print("\t");
-    val = accel4.getXYZ();
-    Serial.println(val.z);
+    int startTime = micros();
+    for(int i = 0; i < 4; i++)
+    {
+      val = accel1.getXYZ();
+
+    }
+    Serial.print("Time to read accel: ");
+    Serial.println(micros() - startTime); // This takes about 52 us
+
+    startTime = micros();
+    dataLog.log("Acc1Z", val.z);
+
+    //val = accel2.getXYZ();
+    dataLog.log("Acc2Z", val.z);
+
+    //val = accel3.getXYZ();
+    dataLog.log("Acc3Z", val.z);
+
+    //val = accel4.getXYZ();
+    dataLog.log("Acc4Z", val.z);
+
+    dataLog.flush();
+    Serial.print("Time to write SD: ");
+    Serial.println(micros() - startTime); // This takes about 3.3ms
+
     delay(50); 
 }
 
