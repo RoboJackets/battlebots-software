@@ -12,8 +12,13 @@ This file is for defining electrical characteristics such as pin and peripheral 
 //CS pins for accelerometers SPI
 #define CS1     14
 #define CS2     15
+#if BRD_VER==1
+#define CS3     9
+#define CS4     10
+#elif BRD_VER==2
 #define CS3     10
 #define CS4     24
+#endif
 
 /*
 //Interrupts not used

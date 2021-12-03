@@ -24,6 +24,7 @@ Eigen::Vector2f Kalman::update(Eigen::Vector4f measured, float control) {
 
     //Update
     K = P * C.transpose() * (C * P * C.transpose() + R).inverse();
+    //K = Eigen::Matrix<float, 2, 4>::Zero();
     xhat = xhat + K * (measured - C * xhat);
     P = (Eigen::Matrix2f::Identity() - K * C) * P;
 
