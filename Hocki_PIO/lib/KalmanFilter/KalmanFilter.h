@@ -1,6 +1,5 @@
 #include <Eigen.h>
-
-
+#include <Eigen/Dense>
 
 class Kalman {
     public:
