@@ -30,9 +30,9 @@ void Logger::log(String field, double value){
 }
 
 // Logs an entire array to a particular field
-void Logger::logStampedArray(String field, double times[], double values[], int length){ //Logs an array of timestamped values to file
+void Logger::logStampedArray(String field, int times[], double values[], int length){ //Logs an array of timestamped values to file
     for(int i = 0; i < length; ++i){
-        log(field, String(times[i]) + "," + String(values[i]));
+        log(field, String(times[i]) + "," + String(values[i], 4));
     }
 }
 

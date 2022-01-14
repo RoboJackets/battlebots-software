@@ -15,7 +15,7 @@ class Logger{
         void log(String field);                    //Writes "[field]" to the log file
         void log(String field, int value);          //Writes "[field]: [value]" to file, but string-ifys ints for you
         void log(String field, double value);        //Writes "[field]: [value]" to file, but string-ifys floats for you
-        void logStampedArray(String field, double times[], double values[], int length); //Logs an array of timestamped values to file
+        void logStampedArray(String field, int times[], double values[], int length); //Logs an array of timestamped values to file
         void close();
         void flush();
         ~Logger();                                      //Destructor
