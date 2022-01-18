@@ -29,6 +29,7 @@ ADXL375 accel2(CS2, SPIRATE);
 ADXL375 accel3(CS3, SPIRATE);
 ADXL375 accel4(CS4, SPIRATE);
 
+/*
 int precision = 4;
 int index = 0;
 int time = 0;
@@ -42,8 +43,12 @@ double readingA3X[6];
 double readingA3Y[6];
 double readingA4X[6];
 double readingA4Y[6];
+*/
 
 
+
+
+/*
 void readData() {
     times[index] = time;
     val1 = accel1.getXYZ();
@@ -80,6 +85,26 @@ void writeData() {
     index = 0;
     size = 0;
 }
+*/
+
+void addLine()
+{
+    /*
+    val1 = accel1.getXYZ();
+    val2 = accel2.getXYZ();
+    val3 = accel3.getXYZ();
+    val4 = accel4.getXYZ();
+    */
+    val1 = AccelReading(199.99, 199.99, 199.99, 1);
+    val2 = AccelReading(9.99, 9.99, 9.99, 1);
+    val3 = AccelReading(99.99, 99.99, 99.99, 1);
+    val4 = AccelReading(9.0, 9.0, 9.0, 1);
+
+    if(accelLog.lineCount < 100)
+    {
+        accelLog.addLine(val1, val2, val3, val4);
+    }
+}
 
 void setup() {
 
@@ -94,6 +119,7 @@ void setup() {
     digitalWrite(CS4, HIGH);
 
     Serial.begin(115200);
+    while(!Serial);
 
     SPI.begin();
 
@@ -113,9 +139,9 @@ void setup() {
     accel4.setCalibrationValue(2, -5);
     accel4.startMeasuring();
 
-    accelLog.begin("Log.txt");
+    accelLog.begin("Timer2.txt");
 
-    timer.begin(readData, 1000);
+    timer.begin(addLine, 1000);
 }
 
 void loop() {
