@@ -7,11 +7,12 @@
 #include "AccelReading.h"
 #include "PinDefs.h"
 
+#include "Controller.h"
+#include "ControllerPacket.h"
+#include "DriveTrain.h"
 
 void setup();
 void loop();
-void readData();
-void writeData();
 
 IntervalTimer timer;
 Logger accelLog;
@@ -22,13 +23,14 @@ AccelReading val4;
 
 #define SPIRATE 5000000
 
-//SPISettings spi_settings(SPIRATE, MSBFIRST, SPI_MODE3);
-
 ADXL375 accel1(CS1, SPIRATE);
 ADXL375 accel2(CS2, SPIRATE);
 ADXL375 accel3(CS3, SPIRATE);
 ADXL375 accel4(CS4, SPIRATE);
 
+Controller c;
+ControllerPacket p;
+DriveTrain drive(ESC_L, ESC_R);
 
 void addLine()
 {
@@ -37,18 +39,8 @@ void addLine()
     val3 = accel3.getXYZ();
     val4 = accel4.getXYZ();
 
-    /* 
-    val1 = AccelReading(199.99, 199.99, 199.99, 1);
-    val2 = AccelReading(9.99, 9.99, 9.99, 1);
-    val3 = AccelReading(99.99, 99.99, 99.99, 1);
-    val4 = AccelReading(9.0, 9.0, 9.0, 1);
-    */
+    accelLog.addLine(val1, val2, val3, val4);
     
-
-    if(accelLog.lineCount < 100)
-    {
-        accelLog.addLine(val1, val2, val3, val4);
-    }
 }
 
 void setup() {
@@ -84,18 +76,35 @@ void setup() {
     accel4.setCalibrationValue(2, -5);
     accel4.startMeasuring();
 
-    accelLog.begin("Timer4.txt");
+    accelLog.begin("Timer7.txt");
 
     timer.begin(addLine, 1000);
 }
 
-void loop() {
-
+void loop()
+{
     if(accelLog.dumpFlag)
     {
-        Serial.println("Ready to Dump");
         accelLog.dump();
     }
+
+    if (c.read(&p)) {
+        c.wdt.feed();
+        if(p.tankDrive){
+            SerialUSB.print("X Speed: ");
+            SerialUSB.print(p.xSpeed);
+            SerialUSB.print("  Y Speed: ");
+            SerialUSB.print(p.ySpeed);
+            SerialUSB.print("  Rot Speed: ");
+            SerialUSB.println(p.rotSpeed);
+            int powerL = map(p.xSpeed, 245, 1805, 300, 700);
+            int powerR = map(p.xSpeed, 245, 1805, 300, 700);
+            drive.setPower(powerL, powerR);
+        }
+    } else {
+        Serial.println("Not reading.");
+    }
+
 }
 
 #endif //PROGRAM_H

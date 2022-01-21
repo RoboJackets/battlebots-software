@@ -1,7 +1,7 @@
 #ifndef LOGGER_H
 #define LOGGER_H
 
-#define LOG_LENGTH 16
+#define LOG_LENGTH 64
 
 #include <fstream>
 #include <Arduino.h>

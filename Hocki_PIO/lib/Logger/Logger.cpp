@@ -54,7 +54,6 @@ void Logger::addToOutputString(float reading) {
 
 void Logger::addLine(AccelReading val1, AccelReading val2, AccelReading val3, AccelReading val4)
 {
-    Serial.println(logIdx);
     if(!whichLog)
     {
         logs1[logIdx++] = val1;
@@ -72,7 +71,6 @@ void Logger::addLine(AccelReading val1, AccelReading val2, AccelReading val3, Ac
 
     if(logIdx == LOG_LENGTH) 
     {
-        Serial.println(logIdx);
         // Signal to main loop to dump file
         dumpFlag = true;
         whichLog = !whichLog;
@@ -83,7 +81,6 @@ void Logger::addLine(AccelReading val1, AccelReading val2, AccelReading val3, Ac
 
 void Logger::dump()
 {
-    Serial.println("Dump");
     for(int i = 0; i < LOG_LENGTH; i+= 4)
     {
         if(whichLog)
