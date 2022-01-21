@@ -23,4 +23,7 @@ This file is for defining physical parameters of the robot
 #define MAX_ANG_ACCEL   164.7874
 #define TARG_ANG_VEL    370
 
+// LOG PARAMS
+#define LOG_LENGTH 15
+
 #endif

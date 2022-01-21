@@ -1,11 +1,10 @@
 #include "Logger.h"
 
 
-Logger::Logger(){
+Logger::Logger() {
 }
 
-void Logger::begin(String logName = "log.txt")
-{
+void Logger::begin(String logName = "log.txt") {
     SD.begin(BUILTIN_SDCARD);                       //Initiate built-in SD card
     logFile = SD.open(logName.c_str(), FILE_WRITE); //Open log file
     Serial.println("Opened Logfile");
@@ -55,39 +54,80 @@ void Logger::addToOutputString(float reading) {
 
 void Logger::addLine(AccelReading val1, AccelReading val2, AccelReading val3, AccelReading val4)
 {
-    /*
-    val1 = accel1.getXYZ();
-    val2 = accel2.getXYZ();
-    val3 = accel3.getXYZ();
-    val4 = accel4.getXYZ();
-    val1 = AccelReading(199.99, 199.99, 199.99, 1);
-    val2 = AccelReading(9.99, 9.99, 9.99, 1);
-    val3 = AccelReading(99.99, 99.99, 99.99, 1);
-    val4 = AccelReading(9.0, 9.0, 9.0, 1);
-    */
-
-    addToOutputString(val1.x);
-    addToOutputString(val1.y);
-    addToOutputString(val1.z);
-
-    addToOutputString(val2.x);
-    addToOutputString(val2.y);
-    addToOutputString(val2.z);
-
-    addToOutputString(val3.x);
-    addToOutputString(val3.y);
-    addToOutputString(val3.z);
-
-    addToOutputString(val4.x);
-    addToOutputString(val4.y);
-    addToOutputString(val4.z);
-
-    log("\n");
-    lineCount ++;
-    if(lineCount% 14  ==  0)
+    Serial.println(logIdx);
+    if(!whichLog)
     {
-        flush();
-        Serial.println("Flushed");
+        logs1[logIdx++] = val1;
+        logs1[logIdx++] = val2;
+        logs1[logIdx++] = val3;
+        logs1[logIdx++] = val4;
     }
-    Serial.println("Added");
+    else
+    {
+        logs2[logIdx++] = val1;
+        logs2[logIdx++] = val2;
+        logs2[logIdx++] = val3;
+        logs2[logIdx++] = val4;
+    }
+
+    if(logIdx == LOG_LENGTH) 
+    {
+        Serial.println(logIdx);
+        // Signal to main loop to dump file
+        dumpFlag = true;
+        whichLog = !whichLog;
+        logIdx = 0;
+    }
+    lineCount ++;
+}
+
+void Logger::dump()
+{
+    Serial.println("Dump");
+    for(int i = 0; i < LOG_LENGTH; i+= 4)
+    {
+        if(whichLog)
+        {
+            addToOutputString(logs1[i].x);
+            addToOutputString(logs1[i].y);
+            addToOutputString(logs1[i].z);
+
+            addToOutputString(logs1[i+1].x);
+            addToOutputString(logs1[i+1].y);
+            addToOutputString(logs1[i+1].z);
+
+            addToOutputString(logs1[i+2].x);
+            addToOutputString(logs1[i+2].y);
+            addToOutputString(logs1[i+2].z);
+
+            addToOutputString(logs1[i+3].x);
+            addToOutputString(logs1[i+3].y);
+            addToOutputString(logs1[i+3].z);
+
+            log("\n");
+        }
+        else
+        {
+            addToOutputString(logs2[i].x);
+            addToOutputString(logs2[i].y);
+            addToOutputString(logs2[i].z);
+
+            addToOutputString(logs2[i+1].x);
+            addToOutputString(logs2[i+1].y);
+            addToOutputString(logs2[i+1].z);
+
+            addToOutputString(logs2[i+2].x);
+            addToOutputString(logs2[i+2].y);
+            addToOutputString(logs2[i+2].z);
+
+            addToOutputString(logs2[i+3].x);
+            addToOutputString(logs2[i+3].y);
+            addToOutputString(logs2[i+3].z);
+
+            log("\n");
+
+        }
+    }
+    flush();
+    dumpFlag = false;
 }

@@ -1,14 +1,17 @@
 #ifndef LOGGER_H
 #define LOGGER_H
 
+#define LOG_LENGTH 16
+
 #include <fstream>
+#include <Arduino.h>
 #include <SPI.h>
 #include <SD.h>
 #include "AccelReading.h"
 
 //Construct a logger, then call [logger].log() whenever you need to write something to SD.
 
-class Logger{
+class Logger {
     public:
         Logger();                    //Constructor
         void begin(String logName);                    //Constructor
@@ -21,11 +24,17 @@ class Logger{
         void flush();
         void addToOutputString(float reading);
         void addLine(AccelReading val1, AccelReading val2, AccelReading val3, AccelReading val4);
-        int lineCount = 0;
+        void dump();
+        volatile int lineCount = 0;
+        volatile bool dumpFlag = false; // tells the main loop to dump
         ~Logger();                                      //Destructor
 
     private:        
         File logFile;                                   //Log file
+        AccelReading logs1[LOG_LENGTH];
+        AccelReading logs2[LOG_LENGTH];
+        volatile bool whichLog = false; // false = logs1, true = logs2
+        volatile int logIdx = 0;
 
 };
 
