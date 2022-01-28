@@ -23,6 +23,8 @@ ADXL375 accel2(CS2, SPIRATE);
 ADXL375 accel3(CS3, SPIRATE);
 ADXL375 accel4(CS4, SPIRATE);
 
+ADXL375* accels[4] = {&accel1, &accel2, &accel3, &accel4};
+
 AccelReading val;
 
 Logger dataLog;
@@ -61,17 +63,19 @@ void setup() {
     accel4.startMeasuring();
 
     dataLog.begin("log.txt");
-
-    dataLog.log("Test", "Test successful");
-    dataLog.log("Overload test");
-    dataLog.log("Int Test", 10);
-    dataLog.log("Float test", 3.1415);
-
-
-
 }
 
 void loop() {
+
+    for(int i = 0; i < 4; i++)
+    {
+        val = accels[i]->getXYZ();
+        Serial.print("Accel");
+        Serial.print(i);
+        Serial.print(": ");
+        Serial.println(val.z);
+    }
+    /*
     int startTime = micros();
     for(int i = 0; i < 4; i++)
     {
@@ -96,7 +100,7 @@ void loop() {
     dataLog.flush();
     Serial.print("Time to write SD: ");
     Serial.println(micros() - startTime); // This takes about 3.3ms
-
+    */
     delay(50); 
 }
 

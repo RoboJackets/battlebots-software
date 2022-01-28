@@ -17,7 +17,7 @@ This file is for defining electrical characteristics such as pin and peripheral 
 #define CS4     10
 #elif BRD_VER==2
 #define CS3     10
-#define CS4     24
+#define CS4     25
 #endif
 
 /*

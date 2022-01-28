@@ -1,14 +1,14 @@
 #include "Logger.h"
 
 
-Logger::Logger(){
+Logger::Logger() {
 }
 
-void Logger::begin(String logName = "log.txt")
-{
+void Logger::begin(String logName = "log.txt") {
     SD.begin(BUILTIN_SDCARD);                       //Initiate built-in SD card
     logFile = SD.open(logName.c_str(), FILE_WRITE); //Open log file
-
+    Serial.println("Opened Logfile");
+    Serial.print(logName);
 }
 
 void Logger::log(String field, String value){
@@ -16,7 +16,7 @@ void Logger::log(String field, String value){
 }
 
 void Logger::log(String field){
-    logFile.write((field + "\n").c_str());                                   //Write to "[field]" to file
+    logFile.write((field).c_str());                                   //Write to "[field]" to file
 }
 
 void Logger::log(String field, int value){
@@ -30,9 +30,9 @@ void Logger::log(String field, double value){
 }
 
 // Logs an entire array to a particular field
-void Logger::logStampedArray(String field, double times[], double values[], int length){ //Logs an array of timestamped values to file
+void Logger::logStampedArray(String field, int times[], double values[], int length){ //Logs an array of timestamped values to file
     for(int i = 0; i < length; ++i){
-        log(field, String(times[i]) + "," + String(values[i]));
+        log(field, String(times[i]) + "," + String(values[i], 4));
     }
 }
 
@@ -47,4 +47,84 @@ void Logger::flush() {
 Logger::~Logger(){
     logFile.close();
 }
+void Logger::addToOutputString(float reading) {
+    log((int)(reading*100.0));
+    log(',');
+}
 
+void Logger::addLine(AccelReading val1, AccelReading val2, AccelReading val3, AccelReading val4)
+{
+    if(!whichLog)
+    {
+        logs1[logIdx++] = val1;
+        logs1[logIdx++] = val2;
+        logs1[logIdx++] = val3;
+        logs1[logIdx++] = val4;
+    }
+    else
+    {
+        logs2[logIdx++] = val1;
+        logs2[logIdx++] = val2;
+        logs2[logIdx++] = val3;
+        logs2[logIdx++] = val4;
+    }
+
+    if(logIdx == LOG_LENGTH) 
+    {
+        // Signal to main loop to dump file
+        dumpFlag = true;
+        whichLog = !whichLog;
+        logIdx = 0;
+    }
+    lineCount ++;
+}
+
+void Logger::dump()
+{
+    for(int i = 0; i < LOG_LENGTH; i+= 4)
+    {
+        if(whichLog)
+        {
+            addToOutputString(logs1[i].x);
+            addToOutputString(logs1[i].y);
+            addToOutputString(logs1[i].z);
+
+            addToOutputString(logs1[i+1].x);
+            addToOutputString(logs1[i+1].y);
+            addToOutputString(logs1[i+1].z);
+
+            addToOutputString(logs1[i+2].x);
+            addToOutputString(logs1[i+2].y);
+            addToOutputString(logs1[i+2].z);
+
+            addToOutputString(logs1[i+3].x);
+            addToOutputString(logs1[i+3].y);
+            addToOutputString(logs1[i+3].z);
+
+            log("\n");
+        }
+        else
+        {
+            addToOutputString(logs2[i].x);
+            addToOutputString(logs2[i].y);
+            addToOutputString(logs2[i].z);
+
+            addToOutputString(logs2[i+1].x);
+            addToOutputString(logs2[i+1].y);
+            addToOutputString(logs2[i+1].z);
+
+            addToOutputString(logs2[i+2].x);
+            addToOutputString(logs2[i+2].y);
+            addToOutputString(logs2[i+2].z);
+
+            addToOutputString(logs2[i+3].x);
+            addToOutputString(logs2[i+3].y);
+            addToOutputString(logs2[i+3].z);
+
+            log("\n");
+
+        }
+    }
+    flush();
+    dumpFlag = false;
+}
