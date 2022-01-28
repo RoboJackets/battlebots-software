@@ -16,9 +16,9 @@ DriveTrain drive(ESC_L, ESC_R);
 
 void setup() {
 	Serial.begin(115200);
-	while (!SerialUSB) {}
+	while (!Serial) {}
 	drive.init();
-	drive.arm();
+	//drive.arm();
 	c.init();
 }
 
@@ -40,6 +40,7 @@ void loop() {
 		Serial.println("Not reading.");
 	}
 	delay(10);
+	Serial.println("loop");
 }
 #endif
 

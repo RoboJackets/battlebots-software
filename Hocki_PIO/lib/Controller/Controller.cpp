@@ -24,6 +24,7 @@ Controller::Controller(){
 
 void watchdogFailureCallback() {
 	Serial.println("Failure.");
+
 }
 
 void Controller::init() {
@@ -40,14 +41,13 @@ bool Controller::read(ControllerPacket *packet) {
 	std::array<uint16_t, 16> rx_channels = sbus_rx->rx_channels();
 		//int rightLR = rx.rx_channels()[0];
 		int rightUD = rx_channels[1];
-		int leftLR = rx_channels[2];
+		int leftUD = rx_channels[2];
 		int rightLR = rx_channels[0];
-		//int leftUD = rx.rx_channels()[3];
+		int leftLR = rx_channels[3];
 		packet->tankDrive = (bool) (rx_channels[6] > 1000);
-		if (packet->tankDrive) {
-			packet->xSpeed = rightUD;
-			packet->rotSpeed = rightLR;
-		}
+		packet->xSpeed = rightUD;
+		packet->ySpeed = rightLR;
+		packet->rotSpeed = leftUD;
 	} 
 	return reading;
 }

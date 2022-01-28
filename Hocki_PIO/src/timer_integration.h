@@ -14,7 +14,7 @@
 void setup();
 void loop();
 
-IntervalTimer timer;
+//IntervalTimer timer;
 Logger accelLog;
 AccelReading val1;
 AccelReading val2;
@@ -56,7 +56,7 @@ void setup() {
     digitalWrite(CS4, HIGH);
 
     Serial.begin(115200);
-    while(!Serial);
+    //while(!Serial);
 
     SPI.begin();
 
@@ -78,7 +78,10 @@ void setup() {
 
     accelLog.begin("Timer7.txt");
 
-    timer.begin(addLine, 1000);
+    //timer.begin(addLine, 1000);
+    drive.init();
+    //drive.arm();
+	c.init();
 }
 
 void loop()
@@ -90,21 +93,45 @@ void loop()
 
     if (c.read(&p)) {
         c.wdt.feed();
+        Serial.print("X Speed: ");
+        Serial.print(p.xSpeed);
+        Serial.print("  Y Speed: ");
+        Serial.print(p.ySpeed);
+        Serial.print("  Rot Speed: ");
+        Serial.println(p.rotSpeed);
         if(p.tankDrive){
-            SerialUSB.print("X Speed: ");
-            SerialUSB.print(p.xSpeed);
-            SerialUSB.print("  Y Speed: ");
-            SerialUSB.print(p.ySpeed);
-            SerialUSB.print("  Rot Speed: ");
-            SerialUSB.println(p.rotSpeed);
+            Serial.println("Tank Drive");
+            float xScaled = map((float)p.xSpeed, 245, 1805, -1.0, 1.0);
+            float rotScaled = map((float)p.ySpeed, 245, 1805, -1.0, 1.0);
+            int powerL = map(xScaled - rotScaled, -2, 2, 300, 700);
+            int powerR = map(xScaled + rotScaled, -2, 2, 300, 700);
+            Serial.print("PowerL: ");
+            Serial.println(powerL);
+            Serial.print("PowerR: ");
+            Serial.print(powerR);
+            /*
             int powerL = map(p.xSpeed, 245, 1805, 300, 700);
             int powerR = map(p.xSpeed, 245, 1805, 300, 700);
+            */
+            drive.setPower(powerL, powerR);
+        }
+        else  //Spin mode
+        {
+            Serial.println("Spin Mode");
+            float rotScaled = map((float)p.rotSpeed, 245, 1805, 0, 1.0);
+            int powerL = map(-rotScaled, -1, 1, 300, 700);
+            int powerR = map(rotScaled, -1, 1, 300, 700);
+            Serial.print("PowerL: ");
+            Serial.println(powerL);
+            Serial.print("PowerR: ");
+            Serial.print(powerR);
             drive.setPower(powerL, powerR);
         }
     } else {
-        Serial.println("Not reading.");
+        //Serial.println("Not reading.");
     }
 
+    delay(5);
 }
 
 #endif //PROGRAM_H
