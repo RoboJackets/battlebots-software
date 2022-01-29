@@ -23,7 +23,7 @@ class Logger {
         void close();
         void flush();
         void addToOutputString(float reading);
-        void addLine(AccelReading val1, AccelReading val2, AccelReading val3, AccelReading val4);
+        void addLine(AccelReading val1, AccelReading val2, AccelReading val3, AccelReading val4, float vavg, float pos);
         void dump();
         volatile int lineCount = 0;
         volatile bool dumpFlag = false; // tells the main loop to dump
@@ -32,9 +32,12 @@ class Logger {
     private:        
         File logFile;                                   //Log file
         AccelReading logs1[LOG_LENGTH];
+        float rotlogs1[LOG_LENGTH/2];
         AccelReading logs2[LOG_LENGTH];
+        float rotlogs2[LOG_LENGTH/2];
         volatile bool whichLog = false; // false = logs1, true = logs2
         volatile int logIdx = 0;
+        volatile int rlogIdx = 0;
 
 };
 

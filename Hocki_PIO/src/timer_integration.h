@@ -14,7 +14,7 @@
 void setup();
 void loop();
 
-//IntervalTimer timer;
+IntervalTimer timer;
 Logger accelLog;
 AccelReading val1;
 AccelReading val2;
@@ -32,12 +32,51 @@ Controller c;
 ControllerPacket p;
 DriveTrain drive(ESC_L, ESC_R);
 
+float vavg;
+float position = 0;
+
 void addLine()
 {
     val1 = accel1.getXYZ();
     val2 = accel2.getXYZ();
     val3 = accel3.getXYZ();
     val4 = accel4.getXYZ();
+
+    if (BRD_VER == 1) {
+        float v1 = val1.x;
+        v1 = sqrt(v1 * 0.0088954f);
+        float v2 = val2.y;
+        v2 = sqrt(v2 * 0.0088954f);
+        float v3 = val3.x;
+        v3 = sqrt(v3 * 0.0088954f);
+        float v4 = val4.y;
+        v4 = sqrt(v4 * 0.0088954f);
+
+        vavg = (v1 + v2 + v3 + v4) / 4;
+
+        position += (vavg * 0.01);
+
+        if (position > 2*PI) 
+            position -= 2*PI;
+        
+    } else if (BRD_VER == 2) {
+        float v1 = sqrt(pow(val1.x, 2)  + pow(val1.y, 2)); //Get centripetal acceleration
+        v1 = sqrt(v1 * 0.0088954f); // Calculate velocity from centripetal acceleration
+        float v2 = sqrt(pow(val2.x, 2)  + pow(val2.y, 2));
+        v2 = sqrt(v2 * 0.0088954f);
+        float v3 = sqrt(pow(val3.x, 2)  + pow(val3.y, 2));
+        v3 = sqrt(v3 * 0.0088954f);
+        float v4 = sqrt(pow(val4.x, 2)  + pow(val4.y, 2));
+        v4 = sqrt(v4 * 0.0088954f);
+
+        vavg = (v1 + v2 + v3 + v4) / 4;
+
+        position += (vavg * 0.01);
+
+        if (position > 2*PI) {
+            position -= 2*PI;
+        }
+    }
 
     accelLog.addLine(val1, val2, val3, val4);
     
@@ -78,10 +117,10 @@ void setup() {
 
     accelLog.begin("Timer7.txt");
 
-    //timer.begin(addLine, 1000);
-    drive.init();
+    timer.begin(addLine, 1000);
+    //drive.init();
     //drive.arm();
-	c.init();
+	//c.init();
 }
 
 void loop()
@@ -90,7 +129,7 @@ void loop()
     {
         accelLog.dump();
     }
-
+    
     if (c.read(&p)) {
         c.wdt.feed();
         Serial.print("X Speed: ");
@@ -112,7 +151,7 @@ void loop()
             /*
             int powerL = map(p.xSpeed, 245, 1805, 300, 700);
             int powerR = map(p.xSpeed, 245, 1805, 300, 700);
-            */
+            */ 
             drive.setPower(powerL, powerR);
         }
         else  //Spin mode
@@ -127,10 +166,11 @@ void loop()
             Serial.print(powerR);
             drive.setPower(powerL, powerR);
         }
+        
     } else {
         //Serial.println("Not reading.");
     }
-
+    
     delay(5);
 }
 

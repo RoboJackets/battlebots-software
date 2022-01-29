@@ -52,7 +52,7 @@ void Logger::addToOutputString(float reading) {
     log(',');
 }
 
-void Logger::addLine(AccelReading val1, AccelReading val2, AccelReading val3, AccelReading val4)
+void Logger::addLine(AccelReading val1, AccelReading val2, AccelReading val3, AccelReading val4, float vavg, float pos)
 {
     if(!whichLog)
     {
@@ -60,6 +60,8 @@ void Logger::addLine(AccelReading val1, AccelReading val2, AccelReading val3, Ac
         logs1[logIdx++] = val2;
         logs1[logIdx++] = val3;
         logs1[logIdx++] = val4;
+        rotlogs1[rlogIdx++] = vavg;
+        rotlogs1[rlogIdx++] = pos;
     }
     else
     {
@@ -67,6 +69,8 @@ void Logger::addLine(AccelReading val1, AccelReading val2, AccelReading val3, Ac
         logs2[logIdx++] = val2;
         logs2[logIdx++] = val3;
         logs2[logIdx++] = val4;
+        rotlogs2[rlogIdx++] = vavg;
+        rotlogs2[rlogIdx++] = pos;
     }
 
     if(logIdx == LOG_LENGTH) 
@@ -75,12 +79,14 @@ void Logger::addLine(AccelReading val1, AccelReading val2, AccelReading val3, Ac
         dumpFlag = true;
         whichLog = !whichLog;
         logIdx = 0;
+        rlogIdx = 0;
     }
     lineCount ++;
 }
 
 void Logger::dump()
 {
+    int j = 0;
     for(int i = 0; i < LOG_LENGTH; i+= 4)
     {
         if(whichLog)
@@ -100,6 +106,9 @@ void Logger::dump()
             addToOutputString(logs1[i+3].x);
             addToOutputString(logs1[i+3].y);
             addToOutputString(logs1[i+3].z);
+
+            addToOutputString(rotlogs1[j]);
+            addToOutputString(rotlogs1[j+1]);
 
             log("\n");
         }
@@ -121,9 +130,13 @@ void Logger::dump()
             addToOutputString(logs2[i+3].y);
             addToOutputString(logs2[i+3].z);
 
+            addToOutputString(rotlogs2[j]);
+            addToOutputString(rotlogs2[j+1]);
+
             log("\n");
 
         }
+        j += 2;
     }
     flush();
     dumpFlag = false;
