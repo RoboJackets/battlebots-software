@@ -1,6 +1,6 @@
 #include "ControllerPacket.h"
 #include "sbus.h"
-#include "Controller.h"
+#include "RemoteController.h"
 #include "Watchdog_t4.h"
 #include "Arduino.h"
 #include "PinDefs.h"
