@@ -7,9 +7,19 @@
 #include "AccelReading.h"
 #include "PinDefs.h"
 
-#include "Controller.h"
+#include "RemoteController.h"
 #include "ControllerPacket.h"
 #include "DriveTrain.h"
+#include <FastLED.h>
+
+#define LED_PIN 4
+#define CLOCK_PIN 3
+#define BUTTON_PIN 5 
+#define COLOR_ORDER GBR
+
+#define NUM_LEDS 8
+CRGB leds[NUM_LEDS];      //naming our LED array
+int brightness = 75;
 
 void setup();
 void loop();
@@ -56,9 +66,11 @@ void addLine()
 
         position += (vavg * 0.01);
 
-        if (position > 2*PI) 
+        if (position > 2*PI) {
             position -= 2*PI;
-        
+        } else if (position < 0) {
+            position += 2*PI;
+        }
     } else if (BRD_VER == 2) {
         float v1 = sqrt(pow(val1.x, 2)  + pow(val1.y, 2)); //Get centripetal acceleration
         v1 = sqrt(v1 * 0.0088954f); // Calculate velocity from centripetal acceleration
@@ -75,10 +87,20 @@ void addLine()
 
         if (position > 2*PI) {
             position -= 2*PI;
+        } else if (position < 0) {
+            position += 2*PI;
         }
     }
 
-    accelLog.addLine(val1, val2, val3, val4);
+    if (position < PI) {
+        fill_solid(leds, NUM_LEDS, CHSV(300, 100, brightness));  
+        FastLED.show();
+    } else {
+        fill_solid(leds, NUM_LEDS, CHSV(180, 100, brightness));  
+        FastLED.show();
+    }
+
+    accelLog.addLine(val1, val2, val3, val4, vavg, position);
     
 }
 
@@ -96,6 +118,9 @@ void setup() {
 
     Serial.begin(115200);
     //while(!Serial);
+
+    FastLED.addLeds<DOTSTAR, LEDD1, LEDC1, COLOR_ORDER>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
+    FastLED.setBrightness(  brightness );
 
     SPI.begin();
 
