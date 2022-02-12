@@ -54,13 +54,13 @@ void addLine()
 
     if (BRD_VER == 1) {
         
-        float v1 = val1.x/9.8f;
+        float v1 = val1.x*9.8f;
         v1 = sqrt(fabs(v1 * 0.0088954f));
-        float v2 = val2.y/9.8f;
+        float v2 = val2.y*9.8f;
         v2 = sqrt(fabs(v2 * 0.0088954f));
-        float v3 = val3.x/9.8f;
+        float v3 = val3.x*9.8f;
         v3 = sqrt(fabs(v3 * 0.0088954f));
-        float v4 = val4.y/9.8f;
+        float v4 = val4.y*9.8f;
         v4 = sqrt(fabs(v4 * 0.0088954f));
         /*
         float rotation = sqrt(2)/2.0;
@@ -74,14 +74,14 @@ void addLine()
 `       */
         vavg = (v1 + v2 + v3 + v4) / 4.0f;
 
-        position += (vavg * 0.01);
+        position += (vavg * 0.001);
 
         if (position > 2*PI) {
             position -= 2*PI;
         } else if (position < 0) {
             position += 2*PI;
         }
-        Serial.printf("v1: %f, v2: %f, v3: %f, v4: %f, vavg: %f, position: %f\n", v1, v2, v3, v3,vavg, position);
+        //Serial.printf("v1: %f, v2: %f, v3: %f, v4: %f, vavg: %f, position: %f\n", v1, v2, v3, v3,vavg, position);
     } else if (BRD_VER == 2) {
         /*
         float v1 = sqrt(pow(val1.x, 2)  + pow(val1.y, 2)); //Get centripetal acceleration
@@ -95,15 +95,15 @@ void addLine()
         */
     
         float s = 0.01258f;
-        float v1 = sqrt((val4.x/9.8f - val3.x/9.8f)/s);
-        float v2 = sqrt((val4.y/9.8f + val1.y/9.8f)/s);
-        float v3 = sqrt((val2.y/9.8f - val3.y/9.8f)/s);
-        float v4 = sqrt((val2.x/9.8f - val1.x/9.8f)/s);
+        float v1 = sqrt((val4.x*9.8f - val3.x*9.8f)/s);
+        float v2 = sqrt((val4.y*9.8f + val1.y*9.8f)/s);
+        float v3 = sqrt((val2.y*9.8f - val3.y*9.8f)/s);
+        float v4 = sqrt((val2.x*9.8f - val1.x*9.8f)/s);
 
         vavg = (v1 + v2 + v3 + v4) / 4;
         
 
-        position += (vavg * 0.01);
+        position += (vavg * 0.001);
 
         if (position > 2*PI) {
             position -= 2*PI;
@@ -177,30 +177,32 @@ void loop()
     if(accelLog.dumpFlag)
     {
         accelLog.dump();
+        Serial.println(micros());
     }
-    
+    long start = micros();
     if (c.read(&p)) {
         c.wdt.feed();
+        /*
         Serial.print("X Speed: ");
         Serial.print(p.xSpeed);
         Serial.print("  Y Speed: ");
         Serial.print(p.ySpeed);
         Serial.print("  Rot Speed: ");
         Serial.println(p.rotSpeed);
+        */
         if(p.tankDrive){
             Serial.println("Tank Drive");
             float xScaled = map((float)p.xSpeed, 245, 1805, -1.0, 1.0);
             float rotScaled = map((float)p.ySpeed, 245, 1805, -1.0, 1.0);
             int powerL = map(xScaled - rotScaled, -2, 2, 300, 700);
             int powerR = map(xScaled + rotScaled, -2, 2, 300, 700);
+            /*
             Serial.print("PowerL: ");
             Serial.println(powerL);
             Serial.print("PowerR: ");
             Serial.print(powerR);
-            /*
-            int powerL = map(p.xSpeed, 245, 1805, 300, 700);
-            int powerR = map(p.xSpeed, 245, 1805, 300, 700);
-            */ 
+            */
+            
             drive.setPower(powerL, powerR);
         }
         else  //Spin mode
@@ -209,17 +211,18 @@ void loop()
             float rotScaled = map((float)p.rotSpeed, 245, 1805, 0, 1.0);
             int powerL = map(-rotScaled, -1, 1, 300, 700);
             int powerR = map(rotScaled, -1, 1, 300, 700);
+            /*
             Serial.print("PowerL: ");
             Serial.println(powerL);
             Serial.print("PowerR: ");
             Serial.print(powerR);
             drive.setPower(powerL, powerR);
+            */
         }
         
     } else {
-        Serial.println("Not reading.");
+        //Serial.println("Not reading.");
     }
-    
     delay(5);
 }
 
