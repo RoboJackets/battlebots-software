@@ -23,6 +23,7 @@ Controller::Controller(){
 }
 
 void watchdogFailureCallback() {
+	digitalWrite(13, LOW);
 	Serial.println("Failure.");
 
 }

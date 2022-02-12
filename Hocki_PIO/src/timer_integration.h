@@ -53,16 +53,26 @@ void addLine()
     val4 = accel4.getXYZ();
 
     if (BRD_VER == 1) {
-        float v1 = val1.x;
-        v1 = sqrt(v1 * 0.0088954f);
-        float v2 = val2.y;
-        v2 = sqrt(v2 * 0.0088954f);
-        float v3 = val3.x;
-        v3 = sqrt(v3 * 0.0088954f);
-        float v4 = val4.y;
-        v4 = sqrt(v4 * 0.0088954f);
+        
+        float v1 = val1.x/9.8f;
+        v1 = sqrt(fabs(v1 * 0.0088954f));
+        float v2 = val2.y/9.8f;
+        v2 = sqrt(fabs(v2 * 0.0088954f));
+        float v3 = val3.x/9.8f;
+        v3 = sqrt(fabs(v3 * 0.0088954f));
+        float v4 = val4.y/9.8f;
+        v4 = sqrt(fabs(v4 * 0.0088954f));
+        /*
+        float rotation = sqrt(2)/2.0;
 
-        vavg = (v1 + v2 + v3 + v4) / 4;
+        float s = 0.01258f;
+
+        float v1 = sqrt(fabs((rotation*val3.x - rotation*val3.y)/9.8f - (rotation*val2.x - rotation*val2.y)/9.8f)/s); //x3 - x2
+        float v2 = sqrt(fabs(-(rotation*val3.x + rotation*val3.y)/9.8f + (rotation*val4.x + rotation*val4.y)/9.8f)/s); //y3 + y4
+        float v3 = sqrt(fabs((rotation*val1.x + rotation*val1.y)/9.8f - (rotation*val2.x + rotation*val2.y)/9.8f)/s); //y1 - y2
+        float v4 = sqrt(fabs((rotation*val1.x - rotation*val1.y)/9.8f - (rotation*val4.x - rotation*val4.y)/9.8f)/s); //x1 - x4
+`       */
+        vavg = (v1 + v2 + v3 + v4) / 4.0f;
 
         position += (vavg * 0.01);
 
@@ -71,7 +81,9 @@ void addLine()
         } else if (position < 0) {
             position += 2*PI;
         }
+        Serial.printf("v1: %f, v2: %f, v3: %f, v4: %f, vavg: %f, position: %f\n", v1, v2, v3, v3,vavg, position);
     } else if (BRD_VER == 2) {
+        /*
         float v1 = sqrt(pow(val1.x, 2)  + pow(val1.y, 2)); //Get centripetal acceleration
         v1 = sqrt(v1 * 0.0088954f); // Calculate velocity from centripetal acceleration
         float v2 = sqrt(pow(val2.x, 2)  + pow(val2.y, 2));
@@ -80,8 +92,16 @@ void addLine()
         v3 = sqrt(v3 * 0.0088954f);
         float v4 = sqrt(pow(val4.x, 2)  + pow(val4.y, 2));
         v4 = sqrt(v4 * 0.0088954f);
+        */
+    
+        float s = 0.01258f;
+        float v1 = sqrt((val4.x/9.8f - val3.x/9.8f)/s);
+        float v2 = sqrt((val4.y/9.8f + val1.y/9.8f)/s);
+        float v3 = sqrt((val2.y/9.8f - val3.y/9.8f)/s);
+        float v4 = sqrt((val2.x/9.8f - val1.x/9.8f)/s);
 
         vavg = (v1 + v2 + v3 + v4) / 4;
+        
 
         position += (vavg * 0.01);
 
@@ -93,10 +113,10 @@ void addLine()
     }
 
     if (position < PI) {
-        fill_solid(leds, NUM_LEDS, CHSV(300, 100, brightness));  
+        fill_solid(leds, NUM_LEDS, CHSV(192, 100, brightness));  
         FastLED.show();
     } else {
-        fill_solid(leds, NUM_LEDS, CHSV(180, 100, brightness));  
+        fill_solid(leds, NUM_LEDS, CHSV(0, 100, brightness));  
         FastLED.show();
     }
 
@@ -111,10 +131,14 @@ void setup() {
     pinMode(CS3, OUTPUT);
     pinMode(CS4, OUTPUT);
 
+    pinMode(13, OUTPUT);
+
     digitalWrite(CS1, HIGH);
     digitalWrite(CS2, HIGH);
     digitalWrite(CS3, HIGH);
     digitalWrite(CS4, HIGH);
+
+    digitalWrite(13, HIGH);
 
     Serial.begin(115200);
     //while(!Serial);
@@ -143,9 +167,9 @@ void setup() {
     accelLog.begin("Timer7.txt");
 
     timer.begin(addLine, 1000);
-    //drive.init();
+    drive.init();
     //drive.arm();
-	//c.init();
+	c.init();
 }
 
 void loop()
@@ -193,7 +217,7 @@ void loop()
         }
         
     } else {
-        //Serial.println("Not reading.");
+        Serial.println("Not reading.");
     }
     
     delay(5);

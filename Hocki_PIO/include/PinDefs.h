@@ -13,8 +13,8 @@ This file is for defining electrical characteristics such as pin and peripheral 
 #define CS1     14
 #define CS2     15
 #if BRD_VER==1
-#define CS3     9
-#define CS4     10
+#define CS3     10
+#define CS4     24
 #elif BRD_VER==2
 #define CS3     10
 #define CS4     25
@@ -31,13 +31,26 @@ This file is for defining electrical characteristics such as pin and peripheral 
 #define INT4A   25
 #define INT4B   24
 */
-
+#if BRD_VER == 1
 #define ESC_L 28
 #define ESC_R 29
 
+#elif BRD_VER==2
+#define ESC_L 29
+#define ESC_R 24
+#define ESC_T_L Serial7
+#define ESC_T_R Serial8
+#endif
+
 #define MAGAPIN 38
 #define MAGBPIN 39
+
+#if BRD_VER == 1
 #define MAGSR   32
+
+#elif BRD_VER == 2
+#define MAGSR 33
+#endif
 
 #define INT10K  23
 #define INT20K  22

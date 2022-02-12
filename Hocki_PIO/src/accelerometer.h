@@ -1,7 +1,7 @@
 
 #ifndef PROGRAMS_H
 #define PROGRAMS_H
-#include "Controller.h"
+#include "RemoteController.h"
 #include "ControllerPacket.h"
 #include "ADXL375.h"
 #include "DriveTrain.h"
@@ -73,7 +73,7 @@ void loop() {
         Serial.print("Accel");
         Serial.print(i);
         Serial.print(": ");
-        Serial.println(val.z);
+        Serial.println(val.x);
     }
     /*
     int startTime = micros();
@@ -101,7 +101,7 @@ void loop() {
     Serial.print("Time to write SD: ");
     Serial.println(micros() - startTime); // This takes about 3.3ms
     */
-    delay(50); 
+    delay(100); 
 }
 
 #endif
