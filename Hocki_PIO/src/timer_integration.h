@@ -55,13 +55,13 @@ void addLine()
     if (BRD_VER == 1) {
         
         float v1 = val1.x*9.8f;
-        v1 = sqrt(fabs(v1 * 0.0088954f));
+        v1 = sqrt(fabs(v1 / 0.0088954f));
         float v2 = val2.y*9.8f;
-        v2 = sqrt(fabs(v2 * 0.0088954f));
+        v2 = sqrt(fabs(v2 / 0.0088954f));
         float v3 = val3.x*9.8f;
-        v3 = sqrt(fabs(v3 * 0.0088954f));
+        v3 = sqrt(fabs(v3 / 0.0088954f));
         float v4 = val4.y*9.8f;
-        v4 = sqrt(fabs(v4 * 0.0088954f));
+        v4 = sqrt(fabs(v4 / 0.0088954f));
         /*
         float rotation = sqrt(2)/2.0;
 
@@ -120,7 +120,10 @@ void addLine()
         FastLED.show();
     }
 
-    accelLog.addLine(val1, val2, val3, val4, vavg, position);
+    float time = millis() / 1.0f;
+    Serial.println(time);
+
+    accelLog.addLine(val1, val2, val3, val4, time, position);
     
 }
 
@@ -149,22 +152,30 @@ void setup() {
     SPI.begin();
 
     accel1.init();
-    accel1.setCalibrationValue(2, -3);
+    accel1.setCalibrationValue(0, -2);
+    accel1.setCalibrationValue(2, -2);
+    accel1.setCalibrationValue(1, -1);
     accel1.startMeasuring();
 
     accel2.init();
-    accel2.setCalibrationValue(2, -5);
+    accel2.setCalibrationValue(0, -1);
+    accel2.setCalibrationValue(1, -2);
+    accel2.setCalibrationValue(2, 0);
     accel2.startMeasuring();
 
     accel3.init();
-    accel3.setCalibrationValue(2, -5);
+    accel3.setCalibrationValue(0, -3);
+    accel3.setCalibrationValue(1, 0);
+    accel3.setCalibrationValue(2, -6);
     accel3.startMeasuring();
 
     accel4.init();
-    accel4.setCalibrationValue(2, -5);
+    accel4.setCalibrationValue(0, -2);
+    accel4.setCalibrationValue(1, 2);
+    accel4.setCalibrationValue(2, -3);
     accel4.startMeasuring();
 
-    accelLog.begin("Timer7.txt");
+    accelLog.begin("Timer9.txt");
 
     timer.begin(addLine, 1000);
     drive.init();
@@ -172,14 +183,15 @@ void setup() {
 	c.init();
 }
 
+
 void loop()
 {
     if(accelLog.dumpFlag)
     {
         accelLog.dump();
-        Serial.println(micros());
     }
-    long start = micros();
+    
+    
     if (c.read(&p)) {
         c.wdt.feed();
         /*
@@ -216,12 +228,13 @@ void loop()
             Serial.println(powerL);
             Serial.print("PowerR: ");
             Serial.print(powerR);
-            drive.setPower(powerL, powerR);
             */
+            drive.setPower(powerL, powerR);
+            
         }
         
     } else {
-        //Serial.println("Not reading.");
+        Serial.println("Not reading.");
     }
     delay(5);
 }

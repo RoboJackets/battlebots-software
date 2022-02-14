@@ -47,19 +47,27 @@ void setup() {
     SPI.begin();
 
     accel1.init();
-    accel1.setCalibrationValue(2, -3);
+    accel1.setCalibrationValue(0, -2);
+    accel1.setCalibrationValue(2, -2);
+    accel1.setCalibrationValue(1, -1);
     accel1.startMeasuring();
 
     accel2.init();
-    accel2.setCalibrationValue(2, -5);
+    accel2.setCalibrationValue(0, -1);
+    accel2.setCalibrationValue(1, -2);
+    accel2.setCalibrationValue(2, 0);
     accel2.startMeasuring();
 
     accel3.init();
-    accel3.setCalibrationValue(2, -5);
+    accel3.setCalibrationValue(0, -3);
+    accel3.setCalibrationValue(1, 0);
+    accel3.setCalibrationValue(2, -6);
     accel3.startMeasuring();
 
     accel4.init();
-    accel4.setCalibrationValue(2, -5);
+    accel4.setCalibrationValue(0, -2);
+    accel4.setCalibrationValue(1, 2);
+    accel4.setCalibrationValue(2, -3);
     accel4.startMeasuring();
 
     dataLog.begin("log.txt");
@@ -73,7 +81,7 @@ void loop() {
         Serial.print("Accel");
         Serial.print(i);
         Serial.print(": ");
-        Serial.println(val.x);
+        Serial.println(val.y);
     }
     /*
     int startTime = micros();
@@ -101,7 +109,7 @@ void loop() {
     Serial.print("Time to write SD: ");
     Serial.println(micros() - startTime); // This takes about 3.3ms
     */
-    delay(100); 
+    delay(1000); 
 }
 
 #endif
