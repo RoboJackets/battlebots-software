@@ -12,9 +12,6 @@
 #include "DriveTrain.h"
 #include <FastLED.h>
 
-#define LED_PIN 4
-#define CLOCK_PIN 3
-#define BUTTON_PIN 5 
 #define COLOR_ORDER GBR
 
 #define NUM_LEDS 8
@@ -42,8 +39,8 @@ Controller c;
 ControllerPacket p;
 DriveTrain drive(ESC_L, ESC_R);
 
-float vavg;
-float position = 0;
+volatile float vavg;
+volatile float position = 0;
 
 void addLine()
 {
@@ -95,12 +92,12 @@ void addLine()
         */
     
         float s = 0.01258f;
-        float v1 = sqrt((val4.x*9.8f - val3.x*9.8f)/s);
-        float v2 = sqrt((val4.y*9.8f + val1.y*9.8f)/s);
-        float v3 = sqrt((val2.y*9.8f - val3.y*9.8f)/s);
-        float v4 = sqrt((val2.x*9.8f - val1.x*9.8f)/s);
+        float v1 = sqrt(fabs(val4.x*9.8f - val1.x*9.8f)/s);
+        float v2 = sqrt(fabs(val4.y*9.8f - val3.y*9.8f)/s);
+        float v3 = sqrt(fabs(val1.y*9.8f - val2.y*9.8f)/s);
+        float v4 = sqrt(fabs(val3.x*9.8f - val2.x*9.8f)/s);
 
-        vavg = (v1 + v2 + v3 + v4) / 4;
+        vavg = (v1 + v2 + v3 + v4) / 4 - 1.43*6.28;
         
 
         position += (vavg * 0.001);
@@ -112,18 +109,11 @@ void addLine()
         }
     }
 
-    if (position < PI) {
-        fill_solid(leds, NUM_LEDS, CHSV(192, 100, brightness));  
-        FastLED.show();
-    } else {
-        fill_solid(leds, NUM_LEDS, CHSV(0, 100, brightness));  
-        FastLED.show();
-    }
 
     float time = millis() / 1.0f;
-    Serial.println(time);
+    //Serial.println(position);
 
-    accelLog.addLine(val1, val2, val3, val4, time, position);
+    accelLog.addLine(val1, val2, val3, val4, vavg, position);
     
 }
 
@@ -175,7 +165,8 @@ void setup() {
     accel4.setCalibrationValue(2, -3);
     accel4.startMeasuring();
 
-    accelLog.begin("Timer9.txt");
+    accelLog.begin("Stationary2.txt");
+
 
     timer.begin(addLine, 1000);
     drive.init();
@@ -203,7 +194,7 @@ void loop()
         Serial.println(p.rotSpeed);
         */
         if(p.tankDrive){
-            Serial.println("Tank Drive");
+            //Serial.println("Tank Drive");
             float xScaled = map((float)p.xSpeed, 245, 1805, -1.0, 1.0);
             float rotScaled = map((float)p.ySpeed, 245, 1805, -1.0, 1.0);
             int powerL = map(xScaled - rotScaled, -2, 2, 300, 700);
@@ -219,7 +210,7 @@ void loop()
         }
         else  //Spin mode
         {
-            Serial.println("Spin Mode");
+            //Serial.println("Spin Mode");
             float rotScaled = map((float)p.rotSpeed, 245, 1805, 0, 1.0);
             int powerL = map(-rotScaled, -1, 1, 300, 700);
             int powerR = map(rotScaled, -1, 1, 300, 700);
@@ -234,7 +225,16 @@ void loop()
         }
         
     } else {
-        Serial.println("Not reading.");
+        //Serial.println("Not reading.");
+    }
+
+    Serial.println(vavg);
+    if (position < PI) {
+        fill_solid(leds, NUM_LEDS, CHSV(100, 128, brightness));  
+        FastLED.show();
+    } else {
+        fill_solid(leds, NUM_LEDS, CHSV(200, 128, brightness));  
+        FastLED.show();
     }
     delay(5);
 }

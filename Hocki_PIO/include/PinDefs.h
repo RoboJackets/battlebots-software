@@ -60,7 +60,7 @@ This file is for defining electrical characteristics such as pin and peripheral 
 #define REF20K  19
 #define IRSEL   37
 
-#define LEDD1   1
+#define LEDD1   3
 #define LEDC1   2
 #define LEDD2   3
 #define LEDC2   4
