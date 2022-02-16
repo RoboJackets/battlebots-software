@@ -97,7 +97,9 @@ void addLine()
         float v3 = sqrt(fabs(val1.y*9.8f - val2.y*9.8f)/s);
         float v4 = sqrt(fabs(val3.x*9.8f - val2.x*9.8f)/s);
 
-        vavg = (v1 + v2 + v3 + v4) / 4 - 1.43*6.28;
+        //vavg = (v1 + v2 + v3 + v4) / 4 - 9.2690;
+
+        vavg = (v1 + v2 + v3 + v4) / 4 - 9.7390;
         
 
         position += (vavg * 0.001);
@@ -165,7 +167,7 @@ void setup() {
     accel4.setCalibrationValue(2, -3);
     accel4.startMeasuring();
 
-    accelLog.begin("Stationary2.txt");
+    accelLog.begin("DriftCalibratedSpinup3.txt");
 
 
     timer.begin(addLine, 1000);
@@ -197,7 +199,7 @@ void loop()
             //Serial.println("Tank Drive");
             float xScaled = map((float)p.xSpeed, 245, 1805, -1.0, 1.0);
             float rotScaled = map((float)p.ySpeed, 245, 1805, -1.0, 1.0);
-            int powerL = map(xScaled - rotScaled, -2, 2, 300, 700);
+            int powerL = map(xScaled - rotScaled, -2*4, 2, 300, 700);
             int powerR = map(xScaled + rotScaled, -2, 2, 300, 700);
             /*
             Serial.print("PowerL: ");
