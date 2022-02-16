@@ -39,6 +39,10 @@ Controller c;
 ControllerPacket p;
 DriveTrain drive(ESC_L, ESC_R);
 
+float vrecord = 0;
+unsigned int vcount = 1;
+volatile float vcalibrate = 0;
+
 volatile float vavg;
 volatile float position = 0;
 
@@ -99,7 +103,7 @@ void addLine()
 
         //vavg = (v1 + v2 + v3 + v4) / 4 - 9.2690;
 
-        vavg = (v1 + v2 + v3 + v4) / 4 - 9.7390;
+        vavg = ((v1 + v2 + v3 + v4) / 4) - vcalibrate;
         
 
         position += (vavg * 0.001);
@@ -195,12 +199,20 @@ void loop()
         Serial.print("  Rot Speed: ");
         Serial.println(p.rotSpeed);
         */
-        if(p.tankDrive){
+        if (p.calibrate) {
+            vcount ++;
+            vrecord += vavg;
+            fill_solid(leds, NUM_LEDS, CHSV(85, 128, brightness));
+            
+        } 
+        else if(p.tankDrive){
+            
+            vcalibrate = vrecord/vcount;
             //Serial.println("Tank Drive");
             float xScaled = map((float)p.xSpeed, 245, 1805, -1.0, 1.0);
             float rotScaled = map((float)p.ySpeed, 245, 1805, -1.0, 1.0);
-            int powerL = map(xScaled - rotScaled, -2*4, 2, 300, 700);
-            int powerR = map(xScaled + rotScaled, -2, 2, 300, 700);
+            int powerL = map(xScaled - rotScaled, -2*4, 2*4, 300, 700);
+            int powerR = map(xScaled + rotScaled, -2*4, 2*4, 300, 700);
             /*
             Serial.print("PowerL: ");
             Serial.println(powerL);
@@ -209,9 +221,12 @@ void loop()
             */
             
             drive.setPower(powerL, powerR);
+            fill_solid(leds, NUM_LEDS, CHSV(0, 128, brightness));
         }
         else  //Spin mode
         {
+            
+            vcalibrate = vrecord/vcount;
             //Serial.println("Spin Mode");
             float rotScaled = map((float)p.rotSpeed, 245, 1805, 0, 1.0);
             int powerL = map(-rotScaled, -1, 1, 300, 700);
@@ -224,20 +239,19 @@ void loop()
             */
             drive.setPower(powerL, powerR);
             
+            
+            if (position < PI) {
+                fill_solid(leds, NUM_LEDS, CHSV(100, 128, brightness));
+            } else {
+                fill_solid(leds, NUM_LEDS, CHSV(200, 128, brightness));
+            }
         }
         
     } else {
         //Serial.println("Not reading.");
     }
-
     Serial.println(vavg);
-    if (position < PI) {
-        fill_solid(leds, NUM_LEDS, CHSV(100, 128, brightness));  
-        FastLED.show();
-    } else {
-        fill_solid(leds, NUM_LEDS, CHSV(200, 128, brightness));  
-        FastLED.show();
-    }
+    FastLED.show();
     delay(5);
 }
 

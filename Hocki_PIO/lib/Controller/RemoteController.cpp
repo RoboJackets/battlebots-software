@@ -46,6 +46,7 @@ bool Controller::read(ControllerPacket *packet) {
 		int rightLR = rx_channels[0];
 		int leftLR = rx_channels[3];
 		packet->tankDrive = (bool) (rx_channels[6] > 1000);
+		packet->calibrate = (bool) (rx_channels[9] > 1000);
 		packet->xSpeed = rightUD;
 		packet->ySpeed = rightLR;
 		packet->rotSpeed = leftUD;
