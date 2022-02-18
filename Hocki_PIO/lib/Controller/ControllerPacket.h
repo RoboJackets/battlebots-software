@@ -7,6 +7,7 @@ struct ControllerPacket {
 	int rotSpeed;
 	bool tankDrive;
 	bool calibrate;
+	bool reversed;
 	bool failsafe;
 	bool lostFrame;
 };

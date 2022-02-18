@@ -2,6 +2,7 @@
 #define PROGRAM_H
 
 #include <Arduino.h>
+#include "Hocki.h"
 #include "Logger.h"
 #include "ADXL375.h"
 #include "AccelReading.h"
@@ -46,6 +47,16 @@ volatile float vcalibrate = 0;
 volatile float vavg;
 volatile float position = 0;
 
+float wrapAngle(float angle)
+{
+    if (angle >= 2*PI) {
+        angle -= 2*PI;
+    } else if (angle < 0) {
+        angle += 2*PI;
+    }
+    return angle;
+}
+
 void addLine()
 {
     val1 = accel1.getXYZ();
@@ -77,11 +88,7 @@ void addLine()
 
         position += (vavg * 0.001);
 
-        if (position > 2*PI) {
-            position -= 2*PI;
-        } else if (position < 0) {
-            position += 2*PI;
-        }
+        position = wrapAngle(position);
         //Serial.printf("v1: %f, v2: %f, v3: %f, v4: %f, vavg: %f, position: %f\n", v1, v2, v3, v3,vavg, position);
     } else if (BRD_VER == 2) {
         /*
@@ -103,16 +110,13 @@ void addLine()
 
         //vavg = (v1 + v2 + v3 + v4) / 4 - 9.2690;
 
-        vavg = ((v1 + v2 + v3 + v4) / 4) - vcalibrate;
+        //vavg = ((v1 + v2 + v3 + v4) / 4) - vcalibrate;
+        vavg = ((v1 + v2 + v3 + v4) / 4);
         
 
         position += (vavg * 0.001);
 
-        if (position > 2*PI) {
-            position -= 2*PI;
-        } else if (position < 0) {
-            position += 2*PI;
-        }
+        position = wrapAngle(position);
     }
 
 
@@ -171,7 +175,7 @@ void setup() {
     accel4.setCalibrationValue(2, -3);
     accel4.startMeasuring();
 
-    accelLog.begin("DriftCalibratedSpinup3.txt");
+    accelLog.begin("Multi_Speed_Uncalibrated.txt");
 
 
     timer.begin(addLine, 1000);
@@ -210,9 +214,9 @@ void loop()
             vcalibrate = vrecord/vcount;
             //Serial.println("Tank Drive");
             float xScaled = map((float)p.xSpeed, 245, 1805, -1.0, 1.0);
-            float rotScaled = map((float)p.ySpeed, 245, 1805, -1.0, 1.0);
-            int powerL = map(xScaled - rotScaled, -2*4, 2*4, 300, 700);
-            int powerR = map(xScaled + rotScaled, -2*4, 2*4, 300, 700);
+            float rotScaled = map((float)p.ySpeed, 245, 1805, -0.5, 0.5);
+            int powerL = map(xScaled - rotScaled, -2, 2, 300, 700);
+            int powerR = map(xScaled + rotScaled, -2, 2, 300, 700);
             /*
             Serial.print("PowerL: ");
             Serial.println(powerL);
@@ -229,15 +233,46 @@ void loop()
             vcalibrate = vrecord/vcount;
             //Serial.println("Spin Mode");
             float rotScaled = map((float)p.rotSpeed, 245, 1805, 0, 1.0);
-            int powerL = map(-rotScaled, -1, 1, 300, 700);
-            int powerR = map(rotScaled, -1, 1, 300, 700);
-            /*
-            Serial.print("PowerL: ");
-            Serial.println(powerL);
-            Serial.print("PowerR: ");
-            Serial.print(powerR);
-            */
-            drive.setPower(powerL, powerR);
+            float xScaled = map((float)p.xSpeed, 245, 1805, -1.0, 1.0);
+            float yScaled = map((float)p.ySpeed, 245, 1805, -1.0, 1.0);
+
+            float theta_D = wrapAngle(atan2(yScaled, xScaled) + PI/2);
+
+            int powerL, powerR;
+            if(theta_D < PI) // Angle doesn't get wrapped
+            {
+                if(position > theta_D && position < theta_D + PI)
+                {
+                    powerL = map(-rotScaled, -1, 1, 300, 700);
+                    powerR = map(rotScaled * T_POWER_RATIO, -1, 1, 300, 700);
+                }
+                else
+                {
+                    powerL = map(-rotScaled * T_POWER_RATIO, -1, 1, 300, 700);
+                    powerR = map(rotScaled, -1, 1, 300, 700);
+                }
+            }
+            else //Angle does get wrapped
+            {
+                if(position > theta_D || position < wrapAngle(theta_D + PI))
+                {
+                    powerL = map(-rotScaled, -1, 1, 300, 700);
+                    powerR = map(rotScaled * T_POWER_RATIO, -1, 1, 300, 700);
+                }
+                else
+                {
+                    powerL = map(-rotScaled * T_POWER_RATIO, -1, 1, 300, 700);
+                    powerR = map(rotScaled, -1, 1, 300, 700);
+                }
+            }
+            if(p.reversed)
+            {
+                drive.setPower(powerR, powerL);
+            }
+            else
+            {
+                drive.setPower(powerL, powerR);
+            }
             
             
             if (position < PI) {
