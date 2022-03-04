@@ -1,9 +1,0 @@
-SbusRx	KEYWORD1
-SbusTx	KEYWORD1
-Begin	KEYWORD2
-Read	KEYWORD2
-rx_channels	KEYWORD2
-failsafe	KEYWORD2
-lost_frame	KEYWORD2
-Write	KEYWORD2
-tx_channels	KEYWORD2
