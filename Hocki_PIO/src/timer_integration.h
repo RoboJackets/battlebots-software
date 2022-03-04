@@ -84,7 +84,7 @@ void addLine()
         float v3 = sqrt(fabs((rotation*val1.x + rotation*val1.y)/9.8f - (rotation*val2.x + rotation*val2.y)/9.8f)/s); //y1 - y2
         float v4 = sqrt(fabs((rotation*val1.x - rotation*val1.y)/9.8f - (rotation*val4.x - rotation*val4.y)/9.8f)/s); //x1 - x4
 `       */
-        vavg = (v1 + v2 + v3 + v4) / 4.0f;
+        vavg = (v1 + v2 + v3 + v4) / 4.0f - vcalibrate;
 
         position += (vavg * 0.001);
 
@@ -111,7 +111,7 @@ void addLine()
         //vavg = (v1 + v2 + v3 + v4) / 4 - 9.2690;
 
         //vavg = ((v1 + v2 + v3 + v4) / 4) - vcalibrate;
-        vavg = ((v1 + v2 + v3 + v4) / 4);
+        vavg = ((v1 + v2 + v3 + v4) / 4.0f);
         
 
         position += (vavg * 0.001);
@@ -146,8 +146,14 @@ void setup() {
     Serial.begin(115200);
     //while(!Serial);
 
-    FastLED.addLeds<DOTSTAR, LEDD1, LEDC1, COLOR_ORDER>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
-    FastLED.setBrightness(  brightness );
+    if (BRD_VER == 1) {
+        pinMode(LEDD1, OUTPUT);
+        digitalWrite(LEDD1, HIGH);
+    }
+    else if (BRD_VER == 2) {
+        FastLED.addLeds<DOTSTAR, LEDD1, LEDC1, COLOR_ORDER> (leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
+        FastLED.setBrightness(  brightness );
+    }
 
     SPI.begin();
 
@@ -206,8 +212,9 @@ void loop()
         if (p.calibrate) {
             vcount ++;
             vrecord += vavg;
-            fill_solid(leds, NUM_LEDS, CHSV(85, 128, brightness));
-            
+            if (BRD_VER == 2) {
+                fill_solid(leds, NUM_LEDS, CHSV(85, 128, brightness));
+            }
         } 
         else if(p.tankDrive){
             
@@ -217,6 +224,7 @@ void loop()
             float rotScaled = map((float)p.ySpeed, 245, 1805, -0.5, 0.5);
             int powerL = map(xScaled - rotScaled, -2, 2, 300, 700);
             int powerR = map(xScaled + rotScaled, -2, 2, 300, 700);
+            Serial.printf("%d, %d\n", powerL, powerR);
             /*
             Serial.print("PowerL: ");
             Serial.println(powerL);
@@ -225,7 +233,9 @@ void loop()
             */
             
             drive.setPower(powerL, powerR);
-            fill_solid(leds, NUM_LEDS, CHSV(0, 128, brightness));
+            if (BRD_VER == 2) {
+                fill_solid(leds, NUM_LEDS, CHSV(0, 128, brightness));
+            }
         }
         else  //Spin mode
         {
@@ -236,34 +246,41 @@ void loop()
             float xScaled = map((float)p.xSpeed, 245, 1805, -1.0, 1.0);
             float yScaled = map((float)p.ySpeed, 245, 1805, -1.0, 1.0);
 
-            float theta_D = wrapAngle(atan2(yScaled, xScaled) + PI/2);
 
             int powerL, powerR;
-            if(theta_D < PI) // Angle doesn't get wrapped
-            {
-                if(position > theta_D && position < theta_D + PI)
+            if (abs(xScaled) > 0.1 && abs(yScaled) > 0.1) {
+                float theta_D = wrapAngle(atan2(yScaled, xScaled) + 5*PI/4); //Add Pi/2 + 3Pi/4 to account for LED placement
+                //Serial.println(theta_D);
+
+                if (theta_D < PI) // Angle doesn't get wrapped
                 {
-                    powerL = map(-rotScaled, -1, 1, 300, 700);
-                    powerR = map(rotScaled * T_POWER_RATIO, -1, 1, 300, 700);
+                    if (position > theta_D && position < theta_D + PI)
+                    {
+                        powerL = map(-rotScaled, -1, 1, 300, 700);
+                        powerR = map(rotScaled * T_POWER_RATIO, -1, 1, 300, 700);
+                    }
+                    else
+                    {
+                        powerL = map(-rotScaled * T_POWER_RATIO, -1, 1, 300, 700);
+                        powerR = map(rotScaled, -1, 1, 300, 700);
+                    }
                 }
-                else
+                else //Angle does get wrapped
                 {
-                    powerL = map(-rotScaled * T_POWER_RATIO, -1, 1, 300, 700);
-                    powerR = map(rotScaled, -1, 1, 300, 700);
+                    if (position > theta_D || position < wrapAngle(theta_D + PI))
+                    {
+                        powerL = map(-rotScaled, -1, 1, 300, 700);
+                        powerR = map(rotScaled * T_POWER_RATIO, -1, 1, 300, 700);
+                    }
+                    else
+                    {
+                        powerL = map(-rotScaled * T_POWER_RATIO, -1, 1, 300, 700);
+                        powerR = map(rotScaled, -1, 1, 300, 700);
+                    }
                 }
-            }
-            else //Angle does get wrapped
-            {
-                if(position > theta_D || position < wrapAngle(theta_D + PI))
-                {
-                    powerL = map(-rotScaled, -1, 1, 300, 700);
-                    powerR = map(rotScaled * T_POWER_RATIO, -1, 1, 300, 700);
-                }
-                else
-                {
-                    powerL = map(-rotScaled * T_POWER_RATIO, -1, 1, 300, 700);
-                    powerR = map(rotScaled, -1, 1, 300, 700);
-                }
+            } else {
+                powerL = map(-rotScaled, -1, 1, 300, 700);
+                powerR = map(rotScaled, -1, 1, 300, 700);
             }
             if(p.reversed)
             {
@@ -275,17 +292,26 @@ void loop()
             }
             
             
-            if (position < PI) {
-                fill_solid(leds, NUM_LEDS, CHSV(100, 128, brightness));
+            if (position < PI/2 || position > 3*PI/2) {
+                if (BRD_VER == 1) {
+                    digitalWrite(LEDD1, HIGH);
+                } else {
+                    fill_solid(leds, NUM_LEDS, CHSV(100, 128, brightness));
+                }
             } else {
-                fill_solid(leds, NUM_LEDS, CHSV(200, 128, brightness));
+                if (BRD_VER == 1) {
+                    digitalWrite(LEDD1, LOW);
+                } else if (BRD_VER == 2) { 
+                    fill_solid(leds, NUM_LEDS, CHSV(200, 128, brightness));
+                }
             }
+            Serial.printf("%f, %f, %d, %d\n",vavg, position, powerL, powerR);
         }
         
     } else {
         //Serial.println("Not reading.");
     }
-    Serial.println(vavg);
+    //Serial.println(vavg);
     FastLED.show();
     delay(5);
 }

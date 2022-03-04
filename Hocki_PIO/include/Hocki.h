@@ -22,7 +22,7 @@ This file is for defining physical parameters of the robot
 // CONTROL PARMS (ALL IN SI)
 #define MAX_ANG_ACCEL   164.7874
 #define TARG_ANG_VEL    370
-#define T_POWER_RATIO 0.95
+#define T_POWER_RATIO 0.65
 
 // LOG PARAMS
 #define LOG_LENGTH 15

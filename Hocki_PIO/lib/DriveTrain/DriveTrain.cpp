@@ -43,6 +43,7 @@ Writes command to ESC using PWM. 0 is full backwards, 1000 is full forwards, 500
 This is consistent with the DSHOT command range (in case we decide to switch to DSHOT I guess)
 */
 void DriveTrain::writeESC(int pin, int cmd){
-  int val = (1000+cmd) * PWM_RESOLUTION / (T_PWM*1000);
+  //int val = (1000+cmd) * PWM_RESOLUTION / (T_PWM*1000);
+  int val = map(cmd, 0, 1000, 1638, 3276);
   analogWrite(pin, val);
 }
