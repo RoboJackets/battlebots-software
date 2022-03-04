@@ -1,7 +1,7 @@
 
 #ifndef PROGRAMS_H
 #define PROGRAMS_H
-#include "Controller.h"
+#include "RemoteController.h"
 #include "ControllerPacket.h"
 #include "ADXL375.h"
 #include "DriveTrain.h"

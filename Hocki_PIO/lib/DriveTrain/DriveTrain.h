@@ -2,7 +2,7 @@
 #define DRIVETRAIN_H
 
 #define F_PWM 400 // Hz
-#define T_PWM 2.5 // 2.5ms = 1/400 Hz
+#define T_PWM 2.5 // .250 ms = 1/400 Hz
 #define PWM_RESOLUTION 4096 //12 bits
 
 #define ESC_STOP_VAL 500

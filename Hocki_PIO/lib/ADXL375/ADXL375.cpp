@@ -19,7 +19,7 @@ void ADXL375::init()
   digitalWrite(_cs_pin, HIGH);
 
   // set the data sampling rate to 3200Hz
-  setDataRate(0b00001111);
+  setDataRate(0b00001101);
 }
 
 void ADXL375::startMeasuring()

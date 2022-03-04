@@ -34,7 +34,7 @@
 #define ADXL375_REG_FIFO_CTL            0x38    // FIFO control
 #define ADXL375_REG_FIFO_STATUS         0x39    // FIFO status
 
-#define ADXL375_XYZ_READ_SCALE_FACTOR   24.4      // scaling factor when reading xyz data
+#define ADXL375_XYZ_READ_SCALE_FACTOR   20.4      // scaling factor when reading xyz data
 #define ADXL375_THRESH_SHOCK_SCALE      780     // scaling factor for shock threshold register
 
 #define ADXL375_FIFO_MODE_BYPASS        0b00

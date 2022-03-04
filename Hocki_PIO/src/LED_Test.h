@@ -44,6 +44,10 @@ void setup()
 void loop()
 {
     fill_solid(leds, NUM_LEDS, CHSV(128, 128, brightness));  
-    FastLED.show(); 
+    FastLED.show();
+    delay(500);
+    fill_solid(leds, NUM_LEDS, CHSV(200, 128, brightness));  
+    FastLED.show();
+    delay(500);
 }
 #endif
