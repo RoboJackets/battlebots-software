@@ -44,6 +44,6 @@ This is consistent with the DSHOT command range (in case we decide to switch to 
 */
 void DriveTrain::writeESC(int pin, int cmd){
   //int val = (1000+cmd) * PWM_RESOLUTION / (T_PWM*1000);
-  int val = map(cmd, 0, 1000, 1638, 3276);
+  int val = map(cmd, 0, 1000, (MIN_PULSE/T_PWM)*PWM_RESOLUTION, (MAX_PULSE/T_PWM)*PWM_RESOLUTION);
   analogWrite(pin, val);
 }
