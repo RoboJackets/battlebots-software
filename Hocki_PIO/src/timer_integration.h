@@ -38,7 +38,7 @@ ADXL375 accel4(CS4, SPIRATE);
 
 Controller c;
 ControllerPacket p;
-DriveTrain drive(ESC_L, ESC_R);
+DriveTrain drive(ESC_L, ESC_R, c);
 
 float vrecord = 0;
 unsigned int vcount = 1;
@@ -185,9 +185,9 @@ void setup() {
 
 
     timer.begin(addLine, 1000);
-    drive.init();
-    //drive.arm();
 	c.init();
+    drive.init();
+    drive.arm();
 }
 
 
@@ -224,7 +224,7 @@ void loop()
             float rotScaled = map((float)p.ySpeed, 245, 1805, -0.5, 0.5);
             int powerL = map(xScaled - rotScaled, -2, 2, 300, 700);
             int powerR = map(xScaled + rotScaled, -2, 2, 300, 700);
-            Serial.printf("%d, %d\n", powerL, powerR);
+            //Serial.printf("%d, %d\n", powerL, powerR);
             /*
             Serial.print("PowerL: ");
             Serial.println(powerL);
@@ -305,7 +305,7 @@ void loop()
                     fill_solid(leds, NUM_LEDS, CHSV(200, 128, brightness));
                 }
             }
-            Serial.printf("%f, %f, %d, %d\n",vavg, position, powerL, powerR);
+            //Serial.printf("%f, %f, %d, %d\n",vavg, position, powerL, powerR);
         }
         
     } else {
