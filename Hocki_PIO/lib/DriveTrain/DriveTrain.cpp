@@ -2,7 +2,8 @@
 #include "DriveTrain.h"
 
 
-DriveTrain::DriveTrain(int pinL, int pinR) : pinL{pinL}, pinR{pinR} {
+DriveTrain::DriveTrain(int pinL, int pinR, Controller c) : pinL{pinL}, pinR{pinR} {
+    control = c;
 }
 
 void DriveTrain::init() {
@@ -28,12 +29,14 @@ void DriveTrain::arm(){
     for(int i = ESC_STOP_VAL; i < ESC_STOP_VAL + ESC_ARM_PEAK_VAL; i++) {
         writeESC(pinL, i);
         writeESC(pinR, i);
+        //control.wdt.feed();
         delay(10);
     }
     delay(100);
     for(int i = ESC_STOP_VAL + ESC_ARM_PEAK_VAL; i >= ESC_STOP_VAL; i--) {
         writeESC(pinL, i);
         writeESC(pinR, i);
+        //control.wdt.feed();
         delay(10);
     }
 }
@@ -44,6 +47,7 @@ This is consistent with the DSHOT command range (in case we decide to switch to 
 */
 void DriveTrain::writeESC(int pin, int cmd){
   //int val = (1000+cmd) * PWM_RESOLUTION / (T_PWM*1000);
+  //int val = map(cmd, 0, 1000, (MIN_PULSE/T_PWM)*PWM_RESOLUTION, (MAX_PULSE/T_PWM)*PWM_RESOLUTION);
   int val = map(cmd, 0, 1000, (MIN_PULSE/T_PWM)*PWM_RESOLUTION, (MAX_PULSE/T_PWM)*PWM_RESOLUTION);
   analogWrite(pin, val);
 }

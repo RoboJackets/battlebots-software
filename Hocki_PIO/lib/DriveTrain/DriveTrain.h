@@ -1,6 +1,8 @@
 #ifndef DRIVETRAIN_H
 #define DRIVETRAIN_H
 
+#include "RemoteController.h"
+
 #define F_PWM 4000 // Hz
 #define T_PWM 0.25 // .250 ms = 1/400 Hz
 #define PWM_RESOLUTION 4096 //12 bits
@@ -13,13 +15,14 @@
 
 class DriveTrain{
     public:
-        DriveTrain(int pinL, int pinR);
+        DriveTrain(int pinL, int pinR, Controller c);
         void init();
         void arm();
         void setPower(int powerLeft, int powerRight);
 
     private:
         int pinL, pinR;
+        Controller control;
         void writeESC(int pin, int cmd);
 };
 
