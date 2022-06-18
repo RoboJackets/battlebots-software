@@ -47,6 +47,13 @@ volatile float vcalibrate = 0;
 volatile float vavg;
 volatile float position = 0;
 
+
+/*
+Helper method to wrap an angle between 0 and 2 * pi.
+@parameters angle to be wrapped.
+@returns angle wrapped to be within 0 and 2 * pi.
+*/
+
 float wrapAngle(float angle)
 {
     if (angle >= 2*PI) {
@@ -56,6 +63,11 @@ float wrapAngle(float angle)
     }
     return angle;
 }
+
+/*
+Method to add a line to the SD log.
+
+*/
 
 void addLine()
 {
