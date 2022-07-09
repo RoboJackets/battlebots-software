@@ -14,14 +14,14 @@ void setup();
 void loop();
 double sum = 0;
 int count = 0;
-Kalman k;
+KalmanFilter k;
 int measuredVelocity = 0;
 float periodOfKalmanFilter = .01;
 float angluarAccelerationSingular = 2.0;
 void setup()
 {
     // put y our setup code here, to run once:
-    k = Kalman();
+    k = KalmanFilter();
     Serial.begin(115200);
 }
 
