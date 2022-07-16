@@ -13,6 +13,8 @@
 #include "DriveTrain.h"
 #include <FastLED.h>
 
+#include <Adafruit_LIS3MDL.h>
+
 #define COLOR_ORDER GBR
 
 #define NUM_LEDS 8
@@ -36,6 +38,8 @@ ADXL375 accel2(CS2, SPIRATE);
 ADXL375 accel3(CS3, SPIRATE);
 ADXL375 accel4(CS4, SPIRATE);
 
+Adafruit_LIS3MDL lis3mdl;
+
 Controller c;
 ControllerPacket p;
 DriveTrain drive(ESC_L, ESC_R, c);
@@ -46,6 +50,7 @@ volatile float vcalibrate = 0;
 
 volatile float vavg;
 volatile float position = 0;
+
 
 float wrapAngle(float angle)
 {
@@ -181,8 +186,11 @@ void setup() {
     accel4.setCalibrationValue(2, -3);
     accel4.startMeasuring();
 
-    accelLog.begin("Multi_Speed_Uncalibrated.txt");
+    lis3mdl.setPerformanceMode(LIS3MDL_HIGHMODE); // setting initial performance mode to "high"
 
+    lis3mdl.setDataRate(LIS3MDL_DATARATE_300_HZ); // setting the initial data rate to 300Hz
+
+    accelLog.begin("Multi_Speed_Uncalibrated.txt");
 
     timer.begin(addLine, 1000);
 	c.init();
@@ -198,9 +206,9 @@ void loop()
         accelLog.dump();
     }
     
-    
     if (c.read(&p)) {
         c.wdt.feed();
+        lis3mdl.read(); // getting the X,Y,Z data
         /*
         Serial.print("X Speed: ");
         Serial.print(p.xSpeed);
@@ -313,7 +321,7 @@ void loop()
     }
     //Serial.println(vavg);
     FastLED.show();
-    delay(5);
+    delay(5);    
 }
 
 #endif //PROGRAM_H
