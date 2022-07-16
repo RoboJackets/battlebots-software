@@ -11,56 +11,50 @@
 
 // define states
 
-#define TOP_TANK    0
-#define BOTTOM_TANK 1
+#define TOP_ARCADE 0
+#define BOTTOM_ARCADE 1
 
-#define TOP_ON_UNDERSPEED   2
-#define TOP_ON_ATSPEED      3
-#define TOP_ON_OFF          4
-#define TOP_OFF             5
+#define TOP_ON_UNDERSPEED 2
+#define TOP_ON_ATSPEED 3
+#define TOP_ON_OFF 4
+#define TOP_OFF 5
 
 #define BOTTOM_ON_OVERSPEED 6
-#define BOTTOM_ON_ATSPEED   7
-#define BOTTOM_ON_OFF       8
-#define BOTTOM_OFF          9
-
+#define BOTTOM_ON_ATSPEED 7
+#define BOTTOM_ON_OFF 8
+#define BOTTOM_OFF 9
 
 // define associated colors
-    
-#define TANK_COLOR          CRGB::Crimson
-#define UNDERSPEED_COLOR    CRGB::Yellow
-#define ATSPEED_COLOR       CRGB::SpringGreen
-#define ON_OFF_COLOR        CRGB::MidnightBlue
-#define OFF_COLOR           CRGB::Black
 
+#define ARCADE_COLOR CRGB::Crimson
+#define UNDERSPEED_COLOR CRGB::Yellow
+#define ATSPEED_COLOR CRGB::SpringGreen
+#define ON_OFF_COLOR CRGB::MidnightBlue
+#define OFF_COLOR CRGB::Black
 
-class StateLED {
+class StateLED
+{
 
-    public:
-        
-        uint8_t topState;
-        uint8_t bottomState;
+public:
+    uint8_t topState;
+    uint8_t bottomState;
 
-        CRGB top[N_LEDS];
-        CRGB bottom[N_LEDS];
-        
-        StateLED();
-        ~StateLED();
+    CRGB top[N_LEDS];
+    CRGB bottom[N_LEDS];
 
-        void topOn(HEKF* filter, bool tankDrive, float targheading);
-        void setTopColor(CRGB color);
-        void topOff();
+    StateLED();
+    ~StateLED();
 
-        void bottomOn(HEKF* filter, bool tankDrive, float targheading);
-        void setBottomColor(CRGB color);
-        void bottomOff();
+    void topOn(HEKF *filter, bool arcadeDrive, float targheading);
+    void setTopColor(CRGB color);
+    void topOff();
 
-    private:
+    void bottomOn(HEKF *filter, bool arcadeDrive, float targheading);
+    void setBottomColor(CRGB color);
+    void bottomOff();
 
-        bool aboutEqual(float a, float b);
-
+private:
+    bool aboutEqual(float a, float b);
 };
-
-
 
 #endif

@@ -14,18 +14,24 @@ Controller c;
 ControllerPacket p;
 DriveTrain drive(ESC_L, ESC_R);
 
-void setup() {
+void setup()
+{
 	Serial.begin(115200);
-	while (!Serial) {}
+	while (!Serial)
+	{
+	}
 	drive.init();
-	//drive.arm();
+	// drive.arm();
 	c.init();
 }
 
-void loop() {
-	if (c.read(&p)) {
+void loop()
+{
+	if (c.read(&p))
+	{
 		c.wdt.feed();
-		if(p.tankDrive){
+		if (p.arcadeDrive)
+		{
 			SerialUSB.print("X Speed: ");
 			SerialUSB.print(p.xSpeed);
 			SerialUSB.print("  Y Speed: ");
@@ -36,11 +42,12 @@ void loop() {
 			int powerR = map(p.xSpeed, 245, 1805, 300, 700);
 			drive.setPower(powerL, powerR);
 		}
-	} else {
+	}
+	else
+	{
 		Serial.println("Not reading.");
 	}
 	delay(10);
 	Serial.println("loop");
 }
 #endif
-

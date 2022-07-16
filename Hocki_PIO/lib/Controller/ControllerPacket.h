@@ -1,11 +1,12 @@
 #ifndef CONTROLLERPACKET_H
 #define CONTROLLERPACKET_H
 
-struct ControllerPacket {
+struct ControllerPacket
+{
 	int xSpeed;
 	int ySpeed;
 	int rotSpeed;
-	bool tankDrive;
+	bool arcadeDrive;
 	bool calibrate;
 	bool reversed;
 	bool failsafe;
@@ -14,7 +15,7 @@ struct ControllerPacket {
 /*
  * Error Below:
  */
-//bool failsafe;
-//bool lostFrame;
+// bool failsafe;
+// bool lostFrame;
 
 #endif
